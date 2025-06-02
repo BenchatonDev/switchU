@@ -228,11 +228,11 @@ void update() {
         int cy = bottom_y;
 
         render_set_color(main_renderer, COLOR_UI_BOX);
-        render_circle(main_renderer, cx, cy, circle_radius, true);
+        //render_circle(main_renderer, cx, cy, circle_radius, true);
 
         if (i == cur_selected_tile && cur_selected_row == 2) {
             render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
-            render_circle(main_renderer, cx, cy, circle_radius + 6, false);
+            //render_circle(main_renderer, cx, cy, circle_radius + 6, false);
         }
     }
 
@@ -241,11 +241,11 @@ void update() {
     int top_y = 64;
 
     render_set_color(main_renderer, COLOR_UI_BOX);
-    render_circle(main_renderer, top_x + circle_radius, top_y, circle_radius, false);
+    //render_circle(main_renderer, top_x + circle_radius, top_y, circle_radius, false);
 
     if (cur_selected_tile == 0 && cur_selected_row == 0) {
         render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
-        render_circle(main_renderer, top_x + circle_radius, top_y, circle_radius + 6, false);
+        //render_circle(main_renderer, top_x + circle_radius, top_y, circle_radius + 6, false);
     }
 
     render_set_color(main_renderer, COLOR_WHITE);
