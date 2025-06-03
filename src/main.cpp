@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
+#include <cstdint>
 
 #include "input/CombinedInput.h"
 #include "input/VPADInput.h"
@@ -172,6 +173,14 @@ void input(Input &input) {
             if (cur_selected_tile < bottom_row_circle_count - 1) {
                 cur_selected_tile++;
             }
+        }
+    }
+
+    if (input.data.buttons_d & Input::BUTTON_A) {
+        if (cur_selected_row == ROW_MIDDLE /*&& cur_selected_tile < apps.size()*/) {
+            /*const App& selectedApp = apps[cur_selected_tile];*/
+            uint64_t titleId = 0x00050000101D9D00;
+            SYSLaunchTitle(titleId);
         }
     }
 
