@@ -181,6 +181,7 @@ void input(Input &input) {
             /*const App& selectedApp = apps[cur_selected_tile];*/
             uint64_t titleId = 0x00050000101D9D00;
             SYSLaunchTitle(titleId);
+            SDL_Quit();
         }
     }
 
