@@ -12,6 +12,8 @@ A remake of the Nintendo Switch's UI for the Wii U
 
 Install Devkitpro following [the official guide for your OS](https://devkitpro.org/wiki/Getting_Started)
 
+[Install librpxloader](https://github.com/wiiu-env/librpxloade)
+
 Install wut:
 ```
 (sudo) (dkp-)pacman -Syu --needed wiiu-dev

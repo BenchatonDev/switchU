@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 
+#include <rpxloader/rpxloader.h>
 #include <coreinit/debug.h>
 #include <coreinit/title.h>
 #include <padscore/kpad.h>
@@ -160,8 +161,8 @@ void input(Input &input) {
         if (cur_menu == MENU_MAIN) {
             if (cur_selected_row > 0) cur_selected_row--;
             cur_selected_tile = 0;
-        } else if (cur_menu == MENU_SETTINGS) {
-            if (cur_selected_row > 0) cur_selected_subrow--;
+        } else if (cur_menu == MENU_USER) {
+            if (cur_selected_subrow > 0) cur_selected_subrow--;
         }
     }
 
@@ -169,8 +170,8 @@ void input(Input &input) {
         if (cur_menu == MENU_MAIN) {
             if (cur_selected_row < 2) cur_selected_row++;
             cur_selected_tile = 0;
-        } else if (cur_menu == MENU_SETTINGS) {
-            if (cur_selected_row < settings_row_count) cur_selected_subrow++;
+        } else if (cur_menu == MENU_USER) {
+            if (cur_selected_subrow < settings_row_count - 1) cur_selected_subrow++;
         }
     }
 
@@ -203,10 +204,12 @@ void input(Input &input) {
             cur_menu = MENU_USER;
             cur_selected_row = ROW_MIDDLE;
         } else if (cur_selected_row == ROW_MIDDLE /*&& cur_selected_tile < apps.size()*/) {
-            if (cur_menu == MENU_SETTINGS) {
+            if (cur_menu == MENU_USER) {
                 if (cur_selected_subrow == 0) {
-                    // insert theme logic
+                    // Insert a profile subsubmenu thing
                 }
+            } else if (cur_menu == MENU_MAIN) {
+                RPXLoader_LaunchHomebrew("vol/external01/wiiu/apps/smb/SuperMarioBros.rpx");
             }
         } else if (cur_selected_tile == 4) {
             cur_menu = MENU_SETTINGS;
@@ -259,6 +262,7 @@ void update() {
     // === Middle Row (Camera-dependent) ===
     const int base_x = tiles_x - (spawn_box_size / 2);
     const int base_y = tiles_y - 185;
+    const int sub_base_y = tiles_y - 200;
 
     if (cur_menu == MENU_MAIN) {
         seperation_space = 264;
@@ -286,10 +290,10 @@ void update() {
                     spawn_box_size + 2 * outline_padding
                 };
 
-                render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
+                render_set_color(main_renderer, COLOR_CYAN);
 
                 if (i < (int)apps.size()) {
-                    font.renderText(main_renderer, apps[i].title, x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
+                    font.renderText(main_renderer, apps[i].title, x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 225, 255, 255});
                 }
 
                 for (int t = 0; t < outline_thickness; ++t) {
@@ -303,16 +307,15 @@ void update() {
                 }
             }
         }
-    } else if (cur_menu == MENU_SETTINGS) {
+    } else if (cur_menu == MENU_USER) {
         seperation_space = 80;
 
         for (int i = 0; i < settings_row_count; ++i) {
-            int y = base_y + seperation_space * i;
+            int y = sub_base_y + seperation_space * i;
 
             SDL_Rect setting_rect = { base_x, y, 256, 64 };
 
-            render_set_color(main_renderer, COLOR_UI_BOX);
-            SDL_RenderDrawRect(main_renderer, &setting_rect);
+            render_set_color(main_renderer, COLOR_WHITE);
 
             if (i == cur_selected_subrow) {
                 const int outline_padding = 2;
@@ -325,7 +328,8 @@ void update() {
                     32 * outline_padding
                 };
 
-                render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
+                render_set_color(main_renderer, COLOR_BLUE);
+                font.renderText(main_renderer, "None"/**/, base_x + 8, y + 16, TextAlign::LEFT, -13, {15, 206, 185, 255});
 
                 for (int t = 0; t < outline_thickness; ++t) {
                     SDL_Rect thick_setting_rect = {
@@ -336,6 +340,8 @@ void update() {
                     };
                     SDL_RenderDrawRect(main_renderer, &thick_setting_rect);
                 }
+            } else {
+                font.renderText(main_renderer, "None"/**/, base_x + 8, y + 16, TextAlign::LEFT, -13, {255, 255, 255, 255});
             }
         }
     }
@@ -380,6 +386,8 @@ void update() {
     }
     if (cur_menu == MENU_SETTINGS) {
         font.renderText(main_renderer, "System Settings", 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
+    } else if (cur_menu == MENU_USER) {
+        font.renderText(main_renderer, /*Insert Wii U User's Name*/ "'s Page", 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
     }
 
     SDL_RenderPresent(main_renderer);

@@ -40,6 +40,8 @@ ICON		:=	media/icon.png
 TV_SPLASH	:=	media/bootDRC.png
 DRC_SPLASH	:=	media/bootDRC.png
 
+WUMS_ROOT   := $(DEVKITPRO)/wums
+
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
@@ -53,13 +55,13 @@ CXXFLAGS	:= $(CFLAGS) -std=gnu++20
 ASFLAGS	:=	$(ARCH)
 LDFLAGS	=	$(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:=	-lSDL2 -lSDL2_image -lwut
+LIBS	:=	-lSDL2 -lSDL2_image -lrpxloader -lwut
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
 # containing include and lib
 #-------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(WUT_ROOT) $(WUT_ROOT)/usr
+LIBDIRS	:= $(PORTLIBS) $(WUMS_ROOT) $(WUT_ROOT) $(WUT_ROOT)/usr
 
 
 #-------------------------------------------------------------------------------
