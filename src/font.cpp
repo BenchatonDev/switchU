@@ -18,8 +18,11 @@ bool BitmapFont::load(SDL_Renderer* renderer, const std::string& path, int gridW
 }
 
 void BitmapFont::renderText(SDL_Renderer* renderer, const std::string& text, int x, int y,
-                            TextAlign align, int letterSpacing) {
+                            TextAlign align, int letterSpacing, SDL_Color color) {
     if (!fontTexture) return;
+
+    SDL_SetTextureColorMod(fontTexture, color.r, color.g, color.b);
+    SDL_SetTextureAlphaMod(fontTexture, color.a);
 
     SDL_Rect src = { 0, 0, charWidth, charHeight };
     SDL_Rect dst = { x, y, charWidth, charHeight };

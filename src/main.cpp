@@ -53,6 +53,10 @@ SDL_Window *main_window;
 SDL_Renderer *main_renderer;
 SDL_Event event;
 
+// Texture
+SDL_Texture* circle = NULL;
+SDL_Texture* circle_selection = NULL;
+
 SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     SDL_RWops* rw = SDL_RWFromFile(path, "rb");
     if (!rw) {
@@ -104,12 +108,31 @@ int initialise() {
     // Handle renderer creation
     main_renderer = SDL_CreateRenderer(main_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
+    circle = load_texture("/vol/external01/switchU/assets/ui_button.png", main_renderer);
+    if (!circle) {
+        OSReport("Failed to load UI Button texture\n");
+    }
+
+    circle_selection = load_texture("/vol/external01/switchU/assets/ui_button_selected.png", main_renderer);
+    if (!circle_selection) {
+        OSReport("Failed to load UI Button Selection texture\n");
+    }
+
     font.load(main_renderer, "/vol/external01/switchU/assets/font.png", 30, 30, 19);
 
     return EXIT_SUCCESS;
 }
 
 void shutdown() {
+    if (circle) {
+        SDL_DestroyTexture(circle);
+        circle = NULL;
+    }
+    if (circle_selection) {
+        SDL_DestroyTexture(circle_selection);
+        circle_selection = NULL;
+    }
+
     SDL_DestroyWindow(main_window);
     SDL_DestroyRenderer(main_renderer);
     SDL_Quit();
@@ -130,7 +153,9 @@ void input(Input &input) {
         if (cur_selected_row == ROW_MIDDLE) {
             cur_selected_tile = (cur_selected_tile - 1 + 12) % 12;
         } else if (cur_selected_row == ROW_BOTTOM) {
-            cur_selected_tile = (cur_selected_tile - 1 + bottom_row_circle_count) % bottom_row_circle_count;
+            if (cur_selected_tile > 0) {
+                cur_selected_tile--;
+            }
         }
     }
 
@@ -138,7 +163,9 @@ void input(Input &input) {
         if (cur_selected_row == ROW_MIDDLE) {
             cur_selected_tile = (cur_selected_tile + 1) % 12;
         } else if (cur_selected_row == ROW_BOTTOM) {
-            cur_selected_tile = (cur_selected_tile + 1) % bottom_row_circle_count;
+            if (cur_selected_tile < bottom_row_circle_count - 1) {
+                cur_selected_tile++;
+            }
         }
     }
 
@@ -202,9 +229,9 @@ void update() {
 
             render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
             if (i < game_titles.size()) {
-                font.renderText(main_renderer, game_titles[i].c_str(), x + 120, base_y - 34, TextAlign::CENTER, -12);
+                font.renderText(main_renderer, game_titles[i].c_str(), x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
             } else {
-                font.renderText(main_renderer, "No Title", x + 120, base_y - 34, TextAlign::CENTER, -12);
+                font.renderText(main_renderer, "No Title", x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
             }
             for (int t = 0; t < outline_thickness; ++t) {
                 SDL_Rect thick_rect = {
@@ -219,33 +246,32 @@ void update() {
     }
 
     // === Bottom Row (Fixed Position, 6 centered circles) ===
-    int bottom_y = WINDOW_HEIGHT - 128;
+    int bottom_y = WINDOW_HEIGHT - 225;
     int total_width = (bottom_row_circle_count * circle_diameter) + ((bottom_row_circle_count - 1) * 32);
     int start_x = (WINDOW_WIDTH - total_width) / 2;
 
     for (int i = 0; i < bottom_row_circle_count; ++i) {
-        int cx = start_x + i * (circle_diameter + 32) + circle_radius;
+        int cx = start_x + i * (circle_diameter + 32);
         int cy = bottom_y;
 
-        render_set_color(main_renderer, COLOR_UI_BOX);
-        //render_circle(main_renderer, cx, cy, circle_radius, true);
+        SDL_Rect dst_rect = { cx, cy, circle_diameter * 2, circle_diameter * 2 };
 
-        if (i == cur_selected_tile && cur_selected_row == 2) {
-            render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
-            //render_circle(main_renderer, cx, cy, circle_radius + 6, false);
+        SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect);
+
+        if (i == cur_selected_tile && cur_selected_row == ROW_BOTTOM) {
+            SDL_RenderCopy(main_renderer, circle_selection, NULL, &dst_rect);
         }
     }
 
     // === Top Row (Fixed, 1 circle in top-right) ===
     int top_x = 64;
-    int top_y = 64;
+    int top_y = 32;
 
-    render_set_color(main_renderer, COLOR_UI_BOX);
-    //render_circle(main_renderer, top_x + circle_radius, top_y, circle_radius, false);
+    SDL_Rect dst_rect_top = { top_x, top_y, circle_diameter * 2, circle_diameter * 2 };
+    SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect_top);
 
-    if (cur_selected_tile == 0 && cur_selected_row == 0) {
-        render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
-        //render_circle(main_renderer, top_x + circle_radius, top_y, circle_radius + 6, false);
+    if (cur_selected_tile == 0 && cur_selected_row == ROW_TOP) {
+        SDL_RenderCopy(main_renderer, circle_selection, NULL, &dst_rect_top);
     }
 
     render_set_color(main_renderer, COLOR_WHITE);
