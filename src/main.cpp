@@ -91,7 +91,7 @@ int initialise() {
 
     // Handle window creation
     main_window = SDL_CreateWindow(
-        "Switch UI",
+        "SwitchU",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
         WINDOW_WIDTH,
@@ -178,10 +178,7 @@ void input(Input &input) {
 
     if (input.data.buttons_d & Input::BUTTON_A) {
         if (cur_selected_row == ROW_MIDDLE /*&& cur_selected_tile < apps.size()*/) {
-            /*const App& selectedApp = apps[cur_selected_tile];*/
-            uint64_t titleId = 0x00050000101D9D00;
-            SYSLaunchTitle(titleId);
-            SDL_Quit();
+            // launch title
         }
     }
 

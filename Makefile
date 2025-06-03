@@ -13,8 +13,8 @@ TOPDIR ?= $(CURDIR)
 # APP_SHORTNAME sets the short name of the application
 # APP_AUTHOR sets the author of the application
 #-------------------------------------------------------------------------------
-APP_NAME		:= Switch UI
-APP_SHORTNAME	:= Switch UI
+APP_NAME		:= SwitchU
+APP_SHORTNAME	:= SwitchU
 APP_AUTHOR		:= ExcellentGamer
 
 include $(DEVKITPRO)/wut/share/wut_rules
