@@ -27,36 +27,46 @@ enum RowSelection {
     ROW_BOTTOM = 2
 };
 
+enum Menu {
+    MENU_MAIN = 0,
+    MENU_USER = 1,
+    MENU_MORE = 2,
+    MENU_SETTINGS = 3,
+    MENU_SCREENSHOT = 4
+};
+
 std::vector<App> apps;
 
 BitmapFont font;
 
-// Constants
+bool quit = false;
+
+int seperation_space = 264;
+int target_camera_offset_x = 0;
+int camera_offset_x = 0;
+int cur_menu = MENU_MAIN;
+
+int cur_selected_tile = 0;
+int cur_selected_row = ROW_MIDDLE;
+int cur_selected_subtile = 0;
+int cur_selected_subrow = 0;
+
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
 
-const int circle_diameter = 64;
+int tiles_x = WINDOW_WIDTH / 6;
+int tiles_y = WINDOW_HEIGHT / 2;
+
+const int circle_diameter = 75;
 const int circle_radius = circle_diameter / 2;
-const int seperation_space = 264;
 const int spawn_box_size = 256;
 const int visible_tile_count = WINDOW_WIDTH / seperation_space;
 const int bottom_row_circle_count = 6;
+const int settings_row_count = 4;
 
-// Global controls
-bool quit = false;
-int tiles_x = WINDOW_WIDTH / 6;
-int tiles_y = WINDOW_HEIGHT / 2;
-int target_camera_offset_x = 0;
-int camera_offset_x = 0;
-int cur_selected_tile = 0;
-int cur_selected_row = ROW_MIDDLE;
-
-// Global data
 SDL_Window *main_window;
 SDL_Renderer *main_renderer;
 SDL_Event event;
-
-// Texture
 SDL_Texture* circle = NULL;
 SDL_Texture* circle_selection = NULL;
 
@@ -147,18 +157,28 @@ void shutdown() {
 
 void input(Input &input) {
     if (input.data.buttons_d & Input::STICK_L_UP) {
-        if (cur_selected_row > 0) cur_selected_row--;
-        cur_selected_tile = 0;
+        if (cur_menu == MENU_MAIN) {
+            if (cur_selected_row > 0) cur_selected_row--;
+            cur_selected_tile = 0;
+        } else if (cur_menu == MENU_SETTINGS) {
+            if (cur_selected_row > 0) cur_selected_subrow--;
+        }
     }
 
     if (input.data.buttons_d & Input::STICK_L_DOWN) {
-        if (cur_selected_row < 2) cur_selected_row++;
-        cur_selected_tile = 0;
+        if (cur_menu == MENU_MAIN) {
+            if (cur_selected_row < 2) cur_selected_row++;
+            cur_selected_tile = 0;
+        } else if (cur_menu == MENU_SETTINGS) {
+            if (cur_selected_row < settings_row_count) cur_selected_subrow++;
+        }
     }
 
     if (input.data.buttons_d & Input::STICK_L_LEFT) {
         if (cur_selected_row == ROW_MIDDLE) {
-            cur_selected_tile = (cur_selected_tile - 1 + 12) % 12;
+            if (cur_menu == MENU_MAIN) {
+                cur_selected_tile = (cur_selected_tile - 1 + 12) % 12;
+            }
         } else if (cur_selected_row == ROW_BOTTOM) {
             if (cur_selected_tile > 0) {
                 cur_selected_tile--;
@@ -168,7 +188,9 @@ void input(Input &input) {
 
     if (input.data.buttons_d & Input::STICK_L_RIGHT) {
         if (cur_selected_row == ROW_MIDDLE) {
-            cur_selected_tile = (cur_selected_tile + 1) % 12;
+            if (cur_menu == MENU_MAIN) {
+                cur_selected_tile = (cur_selected_tile + 1) % 12;
+            }
         } else if (cur_selected_row == ROW_BOTTOM) {
             if (cur_selected_tile < bottom_row_circle_count - 1) {
                 cur_selected_tile++;
@@ -177,8 +199,23 @@ void input(Input &input) {
     }
 
     if (input.data.buttons_d & Input::BUTTON_A) {
-        if (cur_selected_row == ROW_MIDDLE /*&& cur_selected_tile < apps.size()*/) {
-            // launch title
+        if ((cur_selected_row == ROW_TOP) && (cur_menu == MENU_MAIN)) {
+            cur_menu = MENU_USER;
+            cur_selected_row = ROW_MIDDLE;
+        } else if (cur_selected_row == ROW_MIDDLE /*&& cur_selected_tile < apps.size()*/) {
+            if (cur_menu == MENU_SETTINGS) {
+                if (cur_selected_subrow == 0) {
+                    // insert theme logic
+                }
+            }
+        } else if (cur_selected_tile == 4) {
+            cur_menu = MENU_SETTINGS;
+        }
+    }
+
+    if (input.data.buttons_d & Input::BUTTON_B) {
+        if (cur_menu != MENU_MAIN) {
+            cur_menu = MENU_MAIN;
         }
     }
 
@@ -187,7 +224,7 @@ void input(Input &input) {
     }
 
     // Only update camera if middle row is selected
-    if (cur_selected_row == ROW_MIDDLE) {
+    if ((cur_selected_row == ROW_MIDDLE) && (cur_menu == MENU_MAIN)) {
         const int outline_padding = 6;
         int selected_tile_x = cur_selected_tile * seperation_space;
 
@@ -221,80 +258,129 @@ void update() {
 
     // === Middle Row (Camera-dependent) ===
     const int base_x = tiles_x - (spawn_box_size / 2);
-    const int base_y = tiles_y - 160;
+    const int base_y = tiles_y - 185;
 
-    for (int i = 0; i < 12; ++i) {
-        int x = base_x + seperation_space * i - camera_offset_x;
+    if (cur_menu == MENU_MAIN) {
+        seperation_space = 264;
 
-        SDL_Rect icon_rect = { x, base_y, spawn_box_size, spawn_box_size };
+        for (int i = 0; i < 12; ++i) {
+            int x = base_x + seperation_space * i - camera_offset_x;
 
-        if (i < (int)apps.size() && apps[i].icon) {
-            render_icon_with_background(main_renderer, apps[i].icon, x, base_y, spawn_box_size);
-        } else {
-            render_set_color(main_renderer, COLOR_UI_BOX);
-            SDL_RenderDrawRect(main_renderer, &icon_rect);
-        }
+            SDL_Rect icon_rect = { x, base_y, spawn_box_size, spawn_box_size };
 
-        if (i == cur_selected_tile && cur_selected_row == ROW_MIDDLE) {
-            const int outline_padding = 3;
-            const int outline_thickness = 4;
-
-            SDL_Rect outline_rect = {
-                x - outline_padding,
-                base_y - outline_padding,
-                spawn_box_size + 2 * outline_padding,
-                spawn_box_size + 2 * outline_padding
-            };
-
-            render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
-
-            if (i < (int)apps.size()) {
-                font.renderText(main_renderer, apps[i].title, x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
+            if (i < (int)apps.size() && apps[i].icon) {
+                render_icon_with_background(main_renderer, apps[i].icon, x, base_y, spawn_box_size);
+            } else {
+                render_set_color(main_renderer, COLOR_UI_BOX);
+                SDL_RenderDrawRect(main_renderer, &icon_rect);
             }
 
-            for (int t = 0; t < outline_thickness; ++t) {
-                SDL_Rect thick_rect = {
-                    outline_rect.x - t,
-                    outline_rect.y - t,
-                    outline_rect.w + 2 * t,
-                    outline_rect.h + 2 * t
+            if (i == cur_selected_tile && cur_selected_row == ROW_MIDDLE) {
+                const int outline_padding = 3;
+                const int outline_thickness = 4;
+
+                SDL_Rect outline_rect = {
+                    x - outline_padding,
+                    base_y - outline_padding,
+                    spawn_box_size + 2 * outline_padding,
+                    spawn_box_size + 2 * outline_padding
                 };
-                SDL_RenderDrawRect(main_renderer, &thick_rect);
+
+                render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
+
+                if (i < (int)apps.size()) {
+                    font.renderText(main_renderer, apps[i].title, x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
+                }
+
+                for (int t = 0; t < outline_thickness; ++t) {
+                    SDL_Rect thick_rect = {
+                        outline_rect.x - t,
+                        outline_rect.y - t,
+                        outline_rect.w + 2 * t,
+                        outline_rect.h + 2 * t
+                    };
+                    SDL_RenderDrawRect(main_renderer, &thick_rect);
+                }
+            }
+        }
+    } else if (cur_menu == MENU_SETTINGS) {
+        seperation_space = 80;
+
+        for (int i = 0; i < settings_row_count; ++i) {
+            int y = base_y + seperation_space * i;
+
+            SDL_Rect setting_rect = { base_x, y, 256, 64 };
+
+            render_set_color(main_renderer, COLOR_UI_BOX);
+            SDL_RenderDrawRect(main_renderer, &setting_rect);
+
+            if (i == cur_selected_subrow) {
+                const int outline_padding = 2;
+                const int outline_thickness = 3;
+
+                SDL_Rect setting_outline_rect = {
+                    base_x - outline_padding,
+                    y - outline_padding,
+                    128 * outline_padding,
+                    32 * outline_padding
+                };
+
+                render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
+
+                for (int t = 0; t < outline_thickness; ++t) {
+                    SDL_Rect thick_setting_rect = {
+                        setting_outline_rect.x - t,
+                        setting_outline_rect.y - t,
+                        setting_outline_rect.w + 2 * t,
+                        setting_outline_rect.h + 2 * t
+                    };
+                    SDL_RenderDrawRect(main_renderer, &thick_setting_rect);
+                }
             }
         }
     }
 
     // === Bottom Row (Fixed Position, 6 centered circles) ===
-    int bottom_y = WINDOW_HEIGHT - 225;
+    int bottom_y = WINDOW_HEIGHT - 250;
     int total_width = (bottom_row_circle_count * circle_diameter) + ((bottom_row_circle_count - 1) * 32);
     int start_x = (WINDOW_WIDTH - total_width) / 2;
 
-    for (int i = 0; i < bottom_row_circle_count; ++i) {
-        int cx = start_x + i * (circle_diameter + 32);
-        int cy = bottom_y;
+    if (cur_menu == MENU_MAIN) {
+        for (int i = 0; i < bottom_row_circle_count; ++i) {
+            int cx = start_x + i * (circle_diameter + 32);
+            int cy = bottom_y;
 
-        SDL_Rect dst_rect = { cx, cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect dst_rect = { cx, cy, circle_diameter * 2, circle_diameter * 2 };
 
-        SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect);
+            SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect);
 
-        if (i == cur_selected_tile && cur_selected_row == ROW_BOTTOM) {
-            SDL_RenderCopy(main_renderer, circle_selection, NULL, &dst_rect);
+            if (i == cur_selected_tile && cur_selected_row == ROW_BOTTOM) {
+                SDL_RenderCopy(main_renderer, circle_selection, NULL, &dst_rect);
+            }
         }
     }
 
     // === Top Row (Fixed, 1 circle in top-right) ===
-    int top_x = 64;
-    int top_y = 32;
+    int top_x = 32;
+    int top_y = 0;
 
-    SDL_Rect dst_rect_top = { top_x, top_y, circle_diameter * 2, circle_diameter * 2 };
-    SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect_top);
+    SDL_Rect dst_rect_top = { top_x, top_y, 100, 100 };
+    if ((cur_menu == MENU_MAIN) || (cur_menu == MENU_USER)) {
+        SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect_top);
 
-    if (cur_selected_tile == 0 && cur_selected_row == ROW_TOP) {
-        SDL_RenderCopy(main_renderer, circle_selection, NULL, &dst_rect_top);
+        if (cur_selected_tile == 0 && cur_selected_row == ROW_TOP) {
+            SDL_RenderCopy(main_renderer, circle_selection, NULL, &dst_rect_top);
+        }
     }
 
     render_set_color(main_renderer, COLOR_WHITE);
-    SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, WINDOW_HEIGHT - 64, WINDOW_WIDTH / 1.035, WINDOW_HEIGHT - 64);
+    SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, WINDOW_HEIGHT - 90, WINDOW_WIDTH / 1.035, WINDOW_HEIGHT - 90);
+    if (cur_menu != MENU_MAIN) {
+        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, 90, WINDOW_WIDTH / 1.035, 90);
+    }
+    if (cur_menu == MENU_SETTINGS) {
+        font.renderText(main_renderer, "System Settings", 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
+    }
 
     SDL_RenderPresent(main_renderer);
 }
