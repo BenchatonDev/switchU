@@ -17,3 +17,4 @@ void render_set_color(SDL_Renderer *renderer, RenderColor color);
 void render_rectangle(SDL_Renderer *renderer, int xx, int yy, int ww, int hh, bool filled);
 void render_circle(SDL_Renderer *renderer, int32_t centreX, int32_t centreY, int32_t radius, bool fill);
 void render_text(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x, int y, SDL_Color color);
+void render_icon_with_background(SDL_Renderer* renderer, SDL_Texture* icon, int x, int y, int box_size);

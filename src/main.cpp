@@ -26,6 +26,8 @@ enum RowSelection {
     ROW_BOTTOM = 2
 };
 
+std::vector<App> apps;
+
 BitmapFont font;
 
 // Constants
@@ -132,6 +134,10 @@ void shutdown() {
         SDL_DestroyTexture(circle_selection);
         circle_selection = NULL;
     }
+    for (auto& app : apps) {
+        if (app.icon) SDL_DestroyTexture(app.icon);
+    }
+    apps.clear();
 
     SDL_DestroyWindow(main_window);
     SDL_DestroyRenderer(main_renderer);
@@ -213,10 +219,16 @@ void update() {
     for (int i = 0; i < 12; ++i) {
         int x = base_x + seperation_space * i - camera_offset_x;
 
-        render_set_color(main_renderer, COLOR_UI_BOX);
-        render_rectangle(main_renderer, x, base_y, spawn_box_size, spawn_box_size, false);
+        SDL_Rect icon_rect = { x, base_y, spawn_box_size, spawn_box_size };
 
-        if (i == cur_selected_tile && cur_selected_row == 1) {
+        if (i < (int)apps.size() && apps[i].icon) {
+            render_icon_with_background(main_renderer, apps[i].icon, x, base_y, spawn_box_size);
+        } else {
+            render_set_color(main_renderer, COLOR_UI_BOX);
+            SDL_RenderDrawRect(main_renderer, &icon_rect);
+        }
+
+        if (i == cur_selected_tile && cur_selected_row == ROW_MIDDLE) {
             const int outline_padding = 3;
             const int outline_thickness = 4;
 
@@ -228,11 +240,11 @@ void update() {
             };
 
             render_set_color(main_renderer, COLOR_SELECTED_OUTLINE);
-            if (i < game_titles.size()) {
-                font.renderText(main_renderer, game_titles[i].c_str(), x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
-            } else {
-                font.renderText(main_renderer, "No Title", x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
+
+            if (i < (int)apps.size()) {
+                font.renderText(main_renderer, apps[i].title, x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 255, 255, 255});
             }
+
             for (int t = 0; t < outline_thickness; ++t) {
                 SDL_Rect thick_rect = {
                     outline_rect.x - t,
@@ -289,7 +301,7 @@ int main(int argc, char const *argv[]) {
         shutdown();
     }
 
-    load_titles_from_apps();
+    load_apps(main_renderer);
 
     WHBProcInit();
 
