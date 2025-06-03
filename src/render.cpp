@@ -51,10 +51,7 @@ void render_icon_with_background(SDL_Renderer* renderer, SDL_Texture* icon, int 
         return;
 
     // Create a surface to read one pixel from the original texture safely
-    SDL_Surface* icon_surface = nullptr;
-    {
-        // Use IMG_Load to get a surface *during loading* and keep it if needed
-        // But if you're using textures only, this workaround applies
+    SDL_Surface* icon_surface = nullptr; {
         SDL_Texture* tmp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, tex_w, tex_h);
         if (!tmp) return;
 

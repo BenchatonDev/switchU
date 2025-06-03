@@ -195,7 +195,7 @@ void input(Input &input) {
 
         // Clamp camera within bounds
         if (target_camera_offset_x < 0) target_camera_offset_x = 0;
-        int max_camera_offset = seperation_space * 12 - WINDOW_WIDTH;
+        int max_camera_offset = seperation_space * 24 - WINDOW_WIDTH;
         if (target_camera_offset_x > max_camera_offset) target_camera_offset_x = max_camera_offset;
     }
 

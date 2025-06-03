@@ -37,6 +37,8 @@ std::string get_title_from_meta(const char* path) {
 
 void load_apps(SDL_Renderer* renderer) {
     const char* apps_dir = "/vol/external01/wiiu/apps/";
+    const char* custom_icons_dir = "/vol/external01/switchU/custom_icons/";
+
     DIR* dir = opendir(apps_dir);
     if (!dir) {
         OSReport("Failed to open apps directory\n");
@@ -46,16 +48,29 @@ void load_apps(SDL_Renderer* renderer) {
     struct dirent* entry;
     while ((entry = readdir(dir)) != nullptr) {
         if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
-            std::string app_path = std::string(apps_dir) + entry->d_name;
-            std::string icon_path = app_path + "/icon.png";
+            std::string app_name = entry->d_name;
 
-            SDL_Texture* icon = load_texture(icon_path.c_str(), renderer);
-            if (!icon) {
-                OSReport("No icon for app: %s\n", entry->d_name);
-                continue;
+            std::string custom_icon_path = std::string(custom_icons_dir) + app_name + "/icon.png";
+            std::string default_icon_path = std::string(apps_dir) + app_name + "/icon.png";
+
+            SDL_Texture* icon = nullptr;
+
+            // Try loading custom icon first
+            FILE* test = fopen(custom_icon_path.c_str(), "rb");
+            if (test) {
+                fclose(test);
+                icon = load_texture(custom_icon_path.c_str(), renderer);
+                OSReport("Loaded custom icon for %s\n", app_name.c_str());
+            } else {
+                // Fallback to default icon
+                icon = load_texture(default_icon_path.c_str(), renderer);
+                if (!icon) {
+                    OSReport("No icon for app: %s\n", app_name.c_str());
+                    continue;
+                }
             }
 
-            apps.push_back({ entry->d_name, icon });
+            apps.push_back({ app_name, icon });
         }
     }
 
