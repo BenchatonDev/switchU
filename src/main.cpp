@@ -39,13 +39,16 @@ enum Menu {
 
 BitmapFont font;
 
-Uint32 left_hold_time = 0;
-Uint32 right_hold_time = 0;
-bool left_scrolling = false;
-bool right_scrolling = false;
-
-bool quit = false;
+static Uint32 left_hold_time = 0;
+static Uint32 right_hold_time = 0;
+static Uint32 up_hold_time = 0;
+static Uint32 down_hold_time = 0;
+static bool left_scrolling = false;
+static bool right_scrolling = false;
+static bool up_scrolling = false;
+static bool down_scrolling = false;
 static bool game_launched = false;
+bool quit = false;
 
 int seperation_space = 264;
 int target_camera_offset_x = 0;
@@ -176,6 +179,9 @@ void input(Input &input) {
 
     bool holding_left = (input.data.buttons_h & Input::STICK_L_LEFT || input.data.buttons_h & Input::BUTTON_LEFT);
     bool holding_right = (input.data.buttons_h & Input::STICK_L_RIGHT || input.data.buttons_h & Input::BUTTON_RIGHT);
+    bool holding_up = (input.data.buttons_h & Input::STICK_L_UP || input.data.buttons_h & Input::BUTTON_UP);
+    bool holding_down = (input.data.buttons_h & Input::STICK_L_DOWN || input.data.buttons_h & Input::BUTTON_DOWN);
+
     bool pressed_left = (input.data.buttons_d & Input::STICK_L_LEFT || input.data.buttons_d & Input::BUTTON_LEFT);
     bool pressed_right = (input.data.buttons_d & Input::STICK_L_RIGHT || input.data.buttons_d & Input::BUTTON_RIGHT);
     bool pressed_up = (input.data.buttons_d & Input::STICK_L_UP || input.data.buttons_d & Input::BUTTON_UP);
@@ -234,6 +240,17 @@ void input(Input &input) {
         } else if (cur_menu == MENU_USER) {
             if (cur_selected_subrow > 0) cur_selected_subrow--;
         }
+        up_hold_time = now;
+        up_scrolling = true;
+    } else if (holding_up && up_scrolling && cur_menu != MENU_MAIN) {
+        if (now - up_hold_time >= SCROLL_INITIAL_DELAY) {
+            if (cur_menu == MENU_USER && cur_selected_subrow > 0) {
+                cur_selected_subrow--;
+                up_hold_time = now - (SCROLL_INITIAL_DELAY - SCROLL_REPEAT_INTERVAL);
+            }
+        }
+    } else {
+        up_scrolling = false;
     }
 
     if (pressed_down) {
@@ -243,6 +260,17 @@ void input(Input &input) {
         } else if (cur_menu == MENU_USER) {
             if (cur_selected_subrow < settings_row_count - 1) cur_selected_subrow++;
         }
+        down_hold_time = now;
+        down_scrolling = true;
+    } else if (holding_down && down_scrolling && cur_menu != MENU_MAIN) {
+        if (now - down_hold_time >= SCROLL_INITIAL_DELAY) {
+            if (cur_menu == MENU_USER && cur_selected_subrow < settings_row_count - 1) {
+                cur_selected_subrow++;
+                down_hold_time = now - (SCROLL_INITIAL_DELAY - SCROLL_REPEAT_INTERVAL);
+            }
+        }
+    } else {
+        down_scrolling = false;
     }
 
     if (input.data.buttons_d & Input::BUTTON_A) {
