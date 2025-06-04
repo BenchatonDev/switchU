@@ -1,22 +1,15 @@
 #include <math.h>
+#include <string>
+#include <nn/act.h>
+
 #include "util.hpp"
 
-int signnum(int value)
-{
-    return (0 < value) - (value < 0);
-}
+std::string ACCOUNT_ID;
 
-int mod(int a, int base)
-{
-    return ((a % base) + base) % base;
-}
+void get_user_information() {
+    nn::act::Initialize();
 
-int find_distance(int x1, int y1, int x2, int y2)
-{
-    return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
-}
-
-double clamp(double d, double min, double max) {
-  const double t = d < min ? min : d;
-  return t > max ? max : t;
+    char account_id[256];
+    nn::act::GetAccountId(account_id);
+    ACCOUNT_ID = std::string(account_id);
 }

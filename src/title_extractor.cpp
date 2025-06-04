@@ -10,7 +10,7 @@
 #include <vector>
 #include <string>
 
-#include "common.hpp"
+#include "util.hpp"
 #include "title_extractor.hpp"
 
 std::vector<App> apps;

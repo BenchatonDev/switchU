@@ -12,6 +12,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <cstdint>
+#include <nn/act.h>
 
 #include "input/CombinedInput.h"
 #include "input/VPADInput.h"
@@ -20,7 +21,6 @@
 #include "render.hpp"
 #include "util.hpp"
 #include "font.hpp"
-#include "common.hpp"
 #include "title_extractor.hpp"
 
 enum RowSelection {
@@ -106,7 +106,7 @@ SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     return texture;
 }
 
-int initialise() {
+int initialize() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL_Init failed with error: ", SDL_GetError(), "\n");
         return EXIT_FAILURE;
@@ -132,7 +132,7 @@ int initialise() {
     }
 
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        printf("Failed to initialise SDL_image for PNG files: %s\n", IMG_GetError());
+        printf("Failed to initialize SDL_image for PNG files: %s\n", IMG_GetError());
     }
 
     // Handle renderer creation
@@ -147,6 +147,8 @@ int initialise() {
     if (!circle_selection) {
         printf("Failed to load UI Button Selection texture\n");
     }
+
+    get_user_information();
 
     font.load(main_renderer, SD_CARD_PATH "switchU/assets/font.png", 30, 30, 19);
 
@@ -167,11 +169,14 @@ void shutdown() {
     }
     apps.clear();
 
+    nn::act::Finalize();
+
     RPXLoader_DeInitLibrary();
 
     SDL_DestroyWindow(main_window);
     SDL_DestroyRenderer(main_renderer);
     SDL_Quit();
+    AXQuit();
 }
 
 void input(Input &input) {
@@ -469,7 +474,8 @@ void update() {
     if (cur_menu == MENU_SETTINGS) {
         font.renderText(main_renderer, "System Settings", 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
     } else if (cur_menu == MENU_USER) {
-        font.renderText(main_renderer, /*Insert Wii U User's Name*/ "'s Page", 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
+        std::string title = std::string(ACCOUNT_ID) + "'s Page";
+        font.renderText(main_renderer, title.c_str(), 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
     }
 
     SDL_RenderPresent(main_renderer);
@@ -480,7 +486,7 @@ inline bool RunningFromMiiMaker() {
 }
 
 int main(int argc, char const *argv[]) {
-    if (initialise() != EXIT_SUCCESS) {
+    if (initialize() != EXIT_SUCCESS) {
         shutdown();
     }
 
@@ -491,7 +497,6 @@ int main(int argc, char const *argv[]) {
     RPXLoader_InitLibrary();
 
     AXInit();
-    AXQuit();
 
     KPADInit();
     WPADEnableURCC(TRUE);
