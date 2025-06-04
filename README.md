@@ -31,6 +31,7 @@ make (path to Makefile)
 ```
 
 # Credits
+- [DanielKO] For emotional support and helping me figure out the rpx loader
 - [BenchatonDev](https://github.com/BenchatonDev) Made the original repository I built this project on.
 - [Ashquarky](https://github.com/ashquarky) For porting SDL2 to Wii U
 - [Dimok](https://github.com/dimok789) For making VPADInput.h and WPADInput.h

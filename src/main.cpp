@@ -20,6 +20,7 @@
 #include "render.hpp"
 #include "util.hpp"
 #include "font.hpp"
+#include "common.hpp"
 #include "title_extractor.hpp"
 
 enum RowSelection {
@@ -36,11 +37,10 @@ enum Menu {
     MENU_SCREENSHOT = 4
 };
 
-std::vector<App> apps;
-
 BitmapFont font;
 
 bool quit = false;
+static bool game_launched = false;
 
 int seperation_space = 264;
 int target_camera_offset_x = 0;
@@ -74,13 +74,13 @@ SDL_Texture* circle_selection = NULL;
 SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     SDL_RWops* rw = SDL_RWFromFile(path, "rb");
     if (!rw) {
-        OSReport("SDL_RWFromFile failed: %s\n", SDL_GetError());
+        printf("SDL_RWFromFile failed: %s\n", SDL_GetError());
         return NULL;
     }
 
     SDL_Surface* surface = IMG_Load_RW(rw, 1);
     if (!surface) {
-        OSReport("IMG_Load_RW failed: %s\n", IMG_GetError());
+        printf("IMG_Load_RW failed: %s\n", IMG_GetError());
         return NULL;
     }
 
@@ -88,7 +88,7 @@ SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     SDL_FreeSurface(surface);
 
     if (!texture) {
-        OSReport("SDL_CreateTextureFromSurface failed: %s\n", SDL_GetError());
+        printf("SDL_CreateTextureFromSurface failed: %s\n", SDL_GetError());
     }
 
     return texture;
@@ -96,8 +96,12 @@ SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
 
 int initialise() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        OSReport("SDL_Init failed with error: ", SDL_GetError(), "\n");
+        printf("SDL_Init failed with error: ", SDL_GetError(), "\n");
         return EXIT_FAILURE;
+    }
+
+    if (RPXLoader_InitLibrary() != RPX_LOADER_RESULT_SUCCESS) {
+        printf("RPX_LOADER failed with an error");
     }
 
     // Handle window creation
@@ -110,29 +114,29 @@ int initialise() {
         0);
 
     if (!main_window) {
-        OSReport("SDL_CreateWindow failed with error: ", SDL_GetError(), "\n");
+        printf("SDL_CreateWindow failed with error: ", SDL_GetError(), "\n");
         SDL_Quit();
         return EXIT_FAILURE;
     }
 
     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        OSReport("Failed to initialise SDL_image for PNG files: %s\n", IMG_GetError());
+        printf("Failed to initialise SDL_image for PNG files: %s\n", IMG_GetError());
     }
 
     // Handle renderer creation
     main_renderer = SDL_CreateRenderer(main_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    circle = load_texture("/vol/external01/switchU/assets/ui_button.png", main_renderer);
+    circle = load_texture(SD_CARD_PATH "switchU/assets/ui_button.png", main_renderer);
     if (!circle) {
-        OSReport("Failed to load UI Button texture\n");
+        printf("Failed to load UI Button texture\n");
     }
 
-    circle_selection = load_texture("/vol/external01/switchU/assets/ui_button_selected.png", main_renderer);
+    circle_selection = load_texture(SD_CARD_PATH "switchU/assets/ui_button_selected.png", main_renderer);
     if (!circle_selection) {
-        OSReport("Failed to load UI Button Selection texture\n");
+        printf("Failed to load UI Button Selection texture\n");
     }
 
-    font.load(main_renderer, "/vol/external01/switchU/assets/font.png", 30, 30, 19);
+    font.load(main_renderer, SD_CARD_PATH "switchU/assets/font.png", 30, 30, 19);
 
     return EXIT_SUCCESS;
 }
@@ -150,6 +154,8 @@ void shutdown() {
         if (app.icon) SDL_DestroyTexture(app.icon);
     }
     apps.clear();
+
+    RPXLoader_DeInitLibrary();
 
     SDL_DestroyWindow(main_window);
     SDL_DestroyRenderer(main_renderer);
@@ -200,19 +206,27 @@ void input(Input &input) {
     }
 
     if (input.data.buttons_d & Input::BUTTON_A) {
-        if ((cur_selected_row == ROW_TOP) && (cur_menu == MENU_MAIN)) {
-            cur_menu = MENU_USER;
-            cur_selected_row = ROW_MIDDLE;
-        } else if (cur_selected_row == ROW_MIDDLE /*&& cur_selected_tile < apps.size()*/) {
-            if (cur_menu == MENU_USER) {
+        if ((cur_selected_row == ROW_TOP)) {
+            if (cur_menu == MENU_MAIN) {
+                cur_menu = MENU_USER;
+                cur_selected_row = ROW_MIDDLE;
+            }
+        } else if (cur_selected_row == ROW_MIDDLE) {
+            if (cur_menu == MENU_MAIN) {
+                const char* launch_path = get_selected_app_path();
+                printf("Launching app with path: %s\n", launch_path);
+
+                RPXLoaderStatus st = RPXLoader_LaunchHomebrew(launch_path);
+                printf("Launch status: %s\n", RPXLoader_GetStatusStr(st));
+            } else if (cur_menu == MENU_USER) {
                 if (cur_selected_subrow == 0) {
                     // Insert a profile subsubmenu thing
                 }
-            } else if (cur_menu == MENU_MAIN) {
-                RPXLoader_LaunchHomebrew("vol/external01/wiiu/apps/smb/SuperMarioBros.rpx");
             }
-        } else if (cur_selected_tile == 4) {
-            cur_menu = MENU_SETTINGS;
+        } else {
+            if (cur_selected_tile == 4) {
+                cur_menu = MENU_SETTINGS;
+            }
         }
     }
 
@@ -402,9 +416,11 @@ int main(int argc, char const *argv[]) {
         shutdown();
     }
 
-    load_apps(main_renderer);
+    scan_apps(main_renderer);
 
     WHBProcInit();
+
+    RPXLoader_InitLibrary();
 
     AXInit();
     AXQuit();
