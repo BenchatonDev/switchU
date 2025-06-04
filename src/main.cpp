@@ -39,6 +39,11 @@ enum Menu {
 
 BitmapFont font;
 
+Uint32 left_hold_time = 0;
+Uint32 right_hold_time = 0;
+bool left_scrolling = false;
+bool right_scrolling = false;
+
 bool quit = false;
 static bool game_launched = false;
 
@@ -58,11 +63,15 @@ const int WINDOW_HEIGHT = 720;
 int tiles_x = WINDOW_WIDTH / 6;
 int tiles_y = WINDOW_HEIGHT / 2;
 
+const int SCROLL_INITIAL_DELAY = 500;
+const int SCROLL_REPEAT_INTERVAL = 125;
+const int TILE_COUNT_MIDDLE = 12;
+const int TILE_COUNT_BOTTOM = 6;
+
 const int circle_diameter = 75;
 const int circle_radius = circle_diameter / 2;
 const int spawn_box_size = 256;
 const int visible_tile_count = WINDOW_WIDTH / seperation_space;
-const int bottom_row_circle_count = 6;
 const int settings_row_count = 4;
 
 SDL_Window *main_window;
@@ -163,7 +172,62 @@ void shutdown() {
 }
 
 void input(Input &input) {
-    if (input.data.buttons_d & Input::STICK_L_UP) {
+    Uint32 now = SDL_GetTicks();
+
+    bool holding_left = (input.data.buttons_h & Input::STICK_L_LEFT || input.data.buttons_h & Input::BUTTON_LEFT);
+    bool holding_right = (input.data.buttons_h & Input::STICK_L_RIGHT || input.data.buttons_h & Input::BUTTON_RIGHT);
+    bool pressed_left = (input.data.buttons_d & Input::STICK_L_LEFT || input.data.buttons_d & Input::BUTTON_LEFT);
+    bool pressed_right = (input.data.buttons_d & Input::STICK_L_RIGHT || input.data.buttons_d & Input::BUTTON_RIGHT);
+    bool pressed_up = (input.data.buttons_d & Input::STICK_L_UP || input.data.buttons_d & Input::BUTTON_UP);
+    bool pressed_down = (input.data.buttons_d & Input::STICK_L_DOWN || input.data.buttons_d & Input::BUTTON_DOWN);
+
+    bool is_main_menu = (cur_menu == MENU_MAIN);
+    bool is_middle_row = (cur_selected_row == ROW_MIDDLE);
+    bool is_bottom_row = (cur_selected_row == ROW_BOTTOM);
+
+    if (is_main_menu && (is_middle_row || is_bottom_row)) {
+        int tile_count = is_middle_row ? TILE_COUNT_MIDDLE : TILE_COUNT_BOTTOM;
+
+        if (pressed_left) {
+            if (cur_selected_tile > 0) {
+                cur_selected_tile--;
+            } else if (is_middle_row) {
+                cur_selected_tile = tile_count - 1;
+            }
+            left_hold_time = now;
+            left_scrolling = true;
+        } else if (holding_left && left_scrolling) {
+            if (now - left_hold_time >= SCROLL_INITIAL_DELAY) {
+                if (cur_selected_tile > 0) {
+                    cur_selected_tile--;
+                    left_hold_time = now - (SCROLL_INITIAL_DELAY - SCROLL_REPEAT_INTERVAL);
+                }
+            }
+        } else {
+            left_scrolling = false;
+        }
+
+        if (pressed_right) {
+            if (cur_selected_tile < tile_count - 1) {
+                cur_selected_tile++;
+            } else if (is_middle_row) {
+                cur_selected_tile = 0;
+            }
+            right_hold_time = now;
+            right_scrolling = true;
+        } else if (holding_right && right_scrolling) {
+            if (now - right_hold_time >= SCROLL_INITIAL_DELAY) {
+                if (cur_selected_tile < tile_count - 1) {
+                    cur_selected_tile++;
+                    right_hold_time = now - (SCROLL_INITIAL_DELAY - SCROLL_REPEAT_INTERVAL);
+                }
+            }
+        } else {
+            right_scrolling = false;
+        }
+    }
+
+    if (pressed_up) {
         if (cur_menu == MENU_MAIN) {
             if (cur_selected_row > 0) cur_selected_row--;
             cur_selected_tile = 0;
@@ -172,36 +236,12 @@ void input(Input &input) {
         }
     }
 
-    if (input.data.buttons_d & Input::STICK_L_DOWN) {
+    if (pressed_down) {
         if (cur_menu == MENU_MAIN) {
             if (cur_selected_row < 2) cur_selected_row++;
             cur_selected_tile = 0;
         } else if (cur_menu == MENU_USER) {
             if (cur_selected_subrow < settings_row_count - 1) cur_selected_subrow++;
-        }
-    }
-
-    if (input.data.buttons_d & Input::STICK_L_LEFT) {
-        if (cur_selected_row == ROW_MIDDLE) {
-            if (cur_menu == MENU_MAIN) {
-                cur_selected_tile = (cur_selected_tile - 1 + 12) % 12;
-            }
-        } else if (cur_selected_row == ROW_BOTTOM) {
-            if (cur_selected_tile > 0) {
-                cur_selected_tile--;
-            }
-        }
-    }
-
-    if (input.data.buttons_d & Input::STICK_L_RIGHT) {
-        if (cur_selected_row == ROW_MIDDLE) {
-            if (cur_menu == MENU_MAIN) {
-                cur_selected_tile = (cur_selected_tile + 1) % 12;
-            }
-        } else if (cur_selected_row == ROW_BOTTOM) {
-            if (cur_selected_tile < bottom_row_circle_count - 1) {
-                cur_selected_tile++;
-            }
         }
     }
 
@@ -362,11 +402,11 @@ void update() {
 
     // === Bottom Row (Fixed Position, 6 centered circles) ===
     int bottom_y = WINDOW_HEIGHT - 250;
-    int total_width = (bottom_row_circle_count * circle_diameter) + ((bottom_row_circle_count - 1) * 32);
+    int total_width = (TILE_COUNT_BOTTOM * circle_diameter) + ((TILE_COUNT_BOTTOM - 1) * 32);
     int start_x = (WINDOW_WIDTH - total_width) / 2;
 
     if (cur_menu == MENU_MAIN) {
-        for (int i = 0; i < bottom_row_circle_count; ++i) {
+        for (int i = 0; i < TILE_COUNT_BOTTOM; ++i) {
             int cx = start_x + i * (circle_diameter + 32);
             int cy = bottom_y;
 

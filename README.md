@@ -7,12 +7,11 @@ A remake of the Nintendo Switch's UI for the Wii U
 ## Building
 ### Dependencies
 - [wut](https://github.com/devkitPro/wut)
+- [librpxloader](https://github.com/wiiu-env/librpxloader)
 - SDL2 Wii U
 - SDL2 image Wii U
 
 Install Devkitpro following [the official guide for your OS](https://devkitpro.org/wiki/Getting_Started)
-
-[Install librpxloader](https://github.com/wiiu-env/librpxloade)
 
 Install wut:
 ```

@@ -25,3 +25,5 @@ UFDiine
 vgedit
 WiiU-Shell
 wup_installer_gx2
+MultiDRCSpaceDemo
+SonicCD
