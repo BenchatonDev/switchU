@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#include <unordered_set>
+#include <fstream>
 #include <cstring>
 #include <cstdio>
 #include <dirent.h>
@@ -12,6 +14,29 @@
 #include "title_extractor.hpp"
 
 std::vector<App> apps;
+
+std::unordered_set<std::string> load_ignored_apps() {
+    std::unordered_set<std::string> ignored;
+    std::ifstream file(SD_CARD_PATH "switchU/ignore.txt");
+    if (!file.is_open()) {
+        printf("No ignore.txt found or failed to open.\n");
+        return ignored;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        // Trim whitespace and \r
+        line.erase(0, line.find_first_not_of(" \t\r\n")); // left trim
+        line.erase(line.find_last_not_of(" \t\r\n") + 1); // right trim
+        if (!line.empty()) {
+            printf("Ignoring app: %s\n", line.c_str());
+            ignored.insert(line);
+        }
+    }
+
+    file.close();
+    return ignored;
+}
 
 std::string get_title_from_meta(const char* path) {
     FILE* file = fopen(path, "r");
@@ -65,6 +90,8 @@ void scan_apps(SDL_Renderer* renderer) {
     const char* apps_dir = SD_CARD_PATH "wiiu/apps/";
     const char* custom_icons_dir = SD_CARD_PATH "switchU/custom_icons/";
 
+    std::unordered_set<std::string> ignored_apps = load_ignored_apps();
+
     DIR* dir = opendir(apps_dir);
     if (!dir) {
         printf("Failed to open apps directory\n");
@@ -75,6 +102,12 @@ void scan_apps(SDL_Renderer* renderer) {
     while ((entry = readdir(dir)) != nullptr) {
         if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
             std::string app_folder = entry->d_name;
+
+            if (ignored_apps.find(app_folder) != ignored_apps.end()) {
+                printf("Skipping ignored app: %s\n", app_folder.c_str());
+                continue;
+            }
+
             std::string app_path = std::string(apps_dir) + app_folder;
 
             std::string launch_file = find_launchable_file(app_path);
