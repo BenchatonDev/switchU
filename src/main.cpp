@@ -49,6 +49,7 @@ static bool up_scrolling = false;
 static bool down_scrolling = false;
 static bool game_launched = false;
 bool quit = false;
+bool menuOpen = false;
 
 int seperation_space = 264;
 int target_camera_offset_x = 0;
@@ -67,7 +68,7 @@ int tiles_x = WINDOW_WIDTH / 6;
 int tiles_y = WINDOW_HEIGHT / 2;
 
 const int SCROLL_INITIAL_DELAY = 500;
-const int SCROLL_REPEAT_INTERVAL = 125;
+const int SCROLL_REPEAT_INTERVAL = 75;
 const int TILE_COUNT_MIDDLE = 12;
 const int TILE_COUNT_BOTTOM = 6;
 
@@ -82,6 +83,12 @@ SDL_Renderer *main_renderer;
 SDL_Event event;
 SDL_Texture* circle = NULL;
 SDL_Texture* circle_selection = NULL;
+SDL_Texture* miiverse_icon = NULL;
+SDL_Texture* eshop_icon = NULL;
+SDL_Texture* screenshots_icon = NULL;
+SDL_Texture* controller_icon = NULL;
+SDL_Texture* settings_icon = NULL;
+SDL_Texture* power_icon = NULL;
 
 SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     SDL_RWops* rw = SDL_RWFromFile(path, "rb");
@@ -148,6 +155,36 @@ int initialize() {
         printf("Failed to load UI Button Selection texture\n");
     }
 
+    miiverse_icon = load_texture(SD_CARD_PATH "switchU/assets/miiverse.png", main_renderer);
+    if (!miiverse_icon) {
+        printf("Failed to load the MiiVerse texture\n");
+    }
+
+    eshop_icon = load_texture(SD_CARD_PATH "switchU/assets/eshop.png", main_renderer);
+    if (!eshop_icon) {
+        printf("Failed to load the EShop texture\n");
+    }
+
+    screenshots_icon = load_texture(SD_CARD_PATH "switchU/assets/screenshots.png", main_renderer);
+    if (!screenshots_icon) {
+        printf("Failed to load the Screenshots texture\n");
+    }
+
+    controller_icon = load_texture(SD_CARD_PATH "switchU/assets/controller.png", main_renderer);
+    if (!controller_icon) {
+        printf("Failed to load the Controller texture\n");
+    }
+
+    settings_icon = load_texture(SD_CARD_PATH "switchU/assets/settings.png", main_renderer);
+    if (!settings_icon) {
+        printf("Failed to load the Settings texture\n");
+    }
+
+    power_icon = load_texture(SD_CARD_PATH "switchU/assets/power.png", main_renderer);
+    if (!power_icon) {
+        printf("Failed to load the Power texture\n");
+    }
+
     get_user_information();
 
     font.load(main_renderer, SD_CARD_PATH "switchU/assets/font.png", 30, 30, 19);
@@ -163,6 +200,30 @@ void shutdown() {
     if (circle_selection) {
         SDL_DestroyTexture(circle_selection);
         circle_selection = NULL;
+    }
+    if (miiverse_icon) {
+        SDL_DestroyTexture(miiverse_icon);
+        miiverse_icon = NULL;
+    }
+    if (eshop_icon) {
+        SDL_DestroyTexture(eshop_icon);
+        eshop_icon = NULL;
+    }
+    if (screenshots_icon) {
+        SDL_DestroyTexture(screenshots_icon);
+        screenshots_icon = NULL;
+    }
+    if (controller_icon) {
+        SDL_DestroyTexture(controller_icon);
+        controller_icon = NULL;
+    }
+    if (settings_icon) {
+        SDL_DestroyTexture(settings_icon);
+        settings_icon = NULL;
+    }
+    if (power_icon) {
+        SDL_DestroyTexture(power_icon);
+        power_icon = NULL;
     }
     for (auto& app : apps) {
         if (app.icon) SDL_DestroyTexture(app.icon);
@@ -304,8 +365,17 @@ void input(Input &input) {
     }
 
     if (input.data.buttons_d & Input::BUTTON_B) {
+        if (menuOpen) {
+            menuOpen = false;
+        }
         if (cur_menu != MENU_MAIN) {
             cur_menu = MENU_MAIN;
+        }
+    }
+
+    if (input.data.buttons_d & Input::BUTTON_PLUS) {
+        if ((cur_menu == MENU_MAIN) && (cur_selected_row == ROW_MIDDLE)) {
+            menuOpen = true;
         }
     }
 
@@ -444,12 +514,25 @@ void update() {
             int cy = bottom_y;
 
             SDL_Rect dst_rect = { cx, cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect miiverse_rect = { (start_x + 0 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect eshop_rect = { (start_x + 1 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect screenshots_rect = { (start_x + 2 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect controller_rect = { (start_x + 3 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect settings_rect = { (start_x + 4 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect power_rect = { (start_x + 5 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
 
             SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect);
 
             if (i == cur_selected_tile && cur_selected_row == ROW_BOTTOM) {
                 SDL_RenderCopy(main_renderer, circle_selection, NULL, &dst_rect);
             }
+
+            SDL_RenderCopy(main_renderer, miiverse_icon, NULL, &miiverse_rect);
+            SDL_RenderCopy(main_renderer, eshop_icon, NULL, &eshop_rect);
+            SDL_RenderCopy(main_renderer, screenshots_icon, NULL, &screenshots_rect);
+            SDL_RenderCopy(main_renderer, controller_icon, NULL, &controller_rect);
+            SDL_RenderCopy(main_renderer, settings_icon, NULL, &settings_rect);
+            SDL_RenderCopy(main_renderer, power_icon, NULL, &power_rect);
         }
     }
 
@@ -466,16 +549,31 @@ void update() {
         }
     }
 
-    render_set_color(main_renderer, COLOR_WHITE);
-    SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, WINDOW_HEIGHT - 90, WINDOW_WIDTH / 1.035, WINDOW_HEIGHT - 90);
-    if (cur_menu != MENU_MAIN) {
-        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, 90, WINDOW_WIDTH / 1.035, 90);
-    }
     if (cur_menu == MENU_SETTINGS) {
         font.renderText(main_renderer, "System Settings", 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
     } else if (cur_menu == MENU_USER) {
         std::string title = std::string(ACCOUNT_ID) + "'s Page";
         font.renderText(main_renderer, title.c_str(), 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
+    }
+
+    // === Misc ===
+    if (menuOpen) {
+        render_set_color(main_renderer, COLOR_UI_BOX);
+        render_rectangle(main_renderer, 100, 0, (WINDOW_WIDTH - 200), WINDOW_HEIGHT, true);
+    }
+
+    render_set_color(main_renderer, COLOR_WHITE);
+    if (menuOpen) {
+        SDL_RenderDrawLine(main_renderer, ((WINDOW_WIDTH / 28) + 85), WINDOW_HEIGHT - 90, ((WINDOW_WIDTH / 1.035) - 85), WINDOW_HEIGHT - 90);
+    } else {
+        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, WINDOW_HEIGHT - 90, WINDOW_WIDTH / 1.035, WINDOW_HEIGHT - 90);
+    }
+
+    if (cur_menu != MENU_MAIN) {
+        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, 90, WINDOW_WIDTH / 1.035, 90);
+    }
+    if (menuOpen) {
+        SDL_RenderDrawLine(main_renderer, ((WINDOW_WIDTH / 28) + 85), 90, ((WINDOW_WIDTH / 1.035) - 85), 90);
     }
 
     SDL_RenderPresent(main_renderer);
