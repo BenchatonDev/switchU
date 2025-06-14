@@ -70,7 +70,7 @@ int tiles_y = WINDOW_HEIGHT / 2;
 const int SCROLL_INITIAL_DELAY = 500;
 const int SCROLL_REPEAT_INTERVAL = 75;
 const int TILE_COUNT_MIDDLE = 12;
-const int TILE_COUNT_BOTTOM = 6;
+const int TILE_COUNT_BOTTOM = 8;
 
 const int circle_diameter = 75;
 const int circle_radius = circle_diameter / 2;
@@ -86,7 +86,9 @@ SDL_Texture* circle_selection = NULL;
 SDL_Texture* miiverse_icon = NULL;
 SDL_Texture* eshop_icon = NULL;
 SDL_Texture* screenshots_icon = NULL;
+SDL_Texture* browser_icon = NULL;
 SDL_Texture* controller_icon = NULL;
+SDL_Texture* downloads_icon = NULL;
 SDL_Texture* settings_icon = NULL;
 SDL_Texture* power_icon = NULL;
 
@@ -170,8 +172,18 @@ int initialize() {
         printf("Failed to load the Screenshots texture\n");
     }
 
+    browser_icon = load_texture(SD_CARD_PATH "switchU/assets/browser.png", main_renderer);
+    if (!browser_icon) {
+        printf("Failed to load the Browser texture\n");
+    }
+
     controller_icon = load_texture(SD_CARD_PATH "switchU/assets/controller.png", main_renderer);
     if (!controller_icon) {
+        printf("Failed to load the Controller texture\n");
+    }
+
+    downloads_icon = load_texture(SD_CARD_PATH "switchU/assets/downloads.png", main_renderer);
+    if (!downloads_icon) {
         printf("Failed to load the Controller texture\n");
     }
 
@@ -213,9 +225,17 @@ void shutdown() {
         SDL_DestroyTexture(screenshots_icon);
         screenshots_icon = NULL;
     }
+    if (browser_icon) {
+        SDL_DestroyTexture(browser_icon);
+        browser_icon = NULL;
+    }
     if (controller_icon) {
         SDL_DestroyTexture(controller_icon);
         controller_icon = NULL;
+    }
+    if (downloads_icon) {
+        SDL_DestroyTexture(downloads_icon);
+        downloads_icon = NULL;
     }
     if (settings_icon) {
         SDL_DestroyTexture(settings_icon);
@@ -358,7 +378,12 @@ void input(Input &input) {
                 }
             }
         } else {
-            if (cur_selected_tile == 4) {
+            if (cur_selected_tile == 1) {
+                const char* launch_path = "wiiu/apps/appstore/appstore.wuhb";
+
+                RPXLoaderStatus st = RPXLoader_LaunchHomebrew(launch_path);
+                printf("Launch status: %s\n", RPXLoader_GetStatusStr(st));
+            } else if (cur_selected_tile == 6) {
                 cur_menu = MENU_SETTINGS;
             }
         }
@@ -517,9 +542,11 @@ void update() {
             SDL_Rect miiverse_rect = { (start_x + 0 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
             SDL_Rect eshop_rect = { (start_x + 1 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
             SDL_Rect screenshots_rect = { (start_x + 2 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
-            SDL_Rect controller_rect = { (start_x + 3 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
-            SDL_Rect settings_rect = { (start_x + 4 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
-            SDL_Rect power_rect = { (start_x + 5 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect browser_rect = { (start_x + 3 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect controller_rect = { (start_x + 4 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect downloads_rect = { (start_x + 5 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect settings_rect = { (start_x + 6 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect power_rect = { (start_x + 7 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
 
             SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect);
 
@@ -530,7 +557,9 @@ void update() {
             SDL_RenderCopy(main_renderer, miiverse_icon, NULL, &miiverse_rect);
             SDL_RenderCopy(main_renderer, eshop_icon, NULL, &eshop_rect);
             SDL_RenderCopy(main_renderer, screenshots_icon, NULL, &screenshots_rect);
+            SDL_RenderCopy(main_renderer, browser_icon, NULL, &browser_rect);
             SDL_RenderCopy(main_renderer, controller_icon, NULL, &controller_rect);
+            SDL_RenderCopy(main_renderer, downloads_icon, NULL, &downloads_rect);
             SDL_RenderCopy(main_renderer, settings_icon, NULL, &settings_rect);
             SDL_RenderCopy(main_renderer, power_icon, NULL, &power_rect);
         }
