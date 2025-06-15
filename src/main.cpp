@@ -7,6 +7,7 @@
 #include <padscore/kpad.h>
 #include <sndcore2/core.h>
 #include <sysapp/launch.h>
+#include <sysapp/title.h>
 #include <whb/proc.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,7 +21,6 @@
 
 #include "render.hpp"
 #include "util.hpp"
-#include "font.hpp"
 #include "title_extractor.hpp"
 
 enum RowSelection {
@@ -36,8 +36,6 @@ enum Menu {
     MENU_SETTINGS = 3,
     MENU_SCREENSHOT = 4
 };
-
-BitmapFont font;
 
 static Uint32 left_hold_time = 0;
 static Uint32 right_hold_time = 0;
@@ -91,6 +89,7 @@ SDL_Texture* controller_icon = NULL;
 SDL_Texture* downloads_icon = NULL;
 SDL_Texture* settings_icon = NULL;
 SDL_Texture* power_icon = NULL;
+SDL_Texture* reference = NULL;
 
 SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     SDL_RWops* rw = SDL_RWFromFile(path, "rb");
@@ -113,6 +112,21 @@ SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     }
 
     return texture;
+}
+
+inline bool RunningFromMiiMaker() {
+    return (OSGetTitleID() & 0xFFFFFFFFFFFFF0FFull) == 0x000500101004A000ull;
+}
+
+void launch_title_if_exists(uint64_t titleID) {
+    if (RunningFromMiiMaker()) {
+        printf("Cannot launch system titles from Mii Maker environment.\n");
+        quit = true;
+    } else if (SYSCheckTitleExists(titleID)) {
+        SYSLaunchTitle(titleID);
+    } else {
+        printf("Title not found.\n");
+    }
 }
 
 int initialize() {
@@ -197,9 +211,12 @@ int initialize() {
         printf("Failed to load the Power texture\n");
     }
 
-    get_user_information();
+    reference = load_texture(SD_CARD_PATH "switchU/assets/reference.png", main_renderer);
+    if (!reference) {
+        printf("Failed to load the reference image\n");
+    }
 
-    font.load(main_renderer, SD_CARD_PATH "switchU/assets/font.png", 30, 30, 19);
+    get_user_information();
 
     return EXIT_SUCCESS;
 }
@@ -244,6 +261,10 @@ void shutdown() {
     if (power_icon) {
         SDL_DestroyTexture(power_icon);
         power_icon = NULL;
+    }
+    if (reference) {
+        SDL_DestroyTexture(reference);
+        reference = NULL;
     }
     for (auto& app : apps) {
         if (app.icon) SDL_DestroyTexture(app.icon);
@@ -383,6 +404,10 @@ void input(Input &input) {
 
                 RPXLoaderStatus st = RPXLoader_LaunchHomebrew(launch_path);
                 printf("Launch status: %s\n", RPXLoader_GetStatusStr(st));
+            } else if (cur_selected_tile == 3) {
+                uint64_t title_id = 0x000500301001210AULL;
+                printf("Title check: %s\n", SYSCheckTitleExists(title_id) ? "found" : "not found");
+                launch_title_if_exists(title_id);
             } else if (cur_selected_tile == 6) {
                 cur_menu = MENU_SETTINGS;
             }
@@ -410,7 +435,7 @@ void input(Input &input) {
 
     // Only update camera if middle row is selected
     if ((cur_selected_row == ROW_MIDDLE) && (cur_menu == MENU_MAIN)) {
-        const int outline_padding = 6;
+        const int outline_padding = 10;
         int selected_tile_x = cur_selected_tile * seperation_space;
 
         int tile_left = selected_tile_x - outline_padding;
@@ -443,14 +468,14 @@ void update() {
 
     // === Middle Row (Camera-dependent) ===
     const int base_x = tiles_x - (spawn_box_size / 2);
-    const int base_y = tiles_y - 185;
+    const int base_y = tiles_y - 170;
     const int sub_base_y = tiles_y - 200;
 
     if (cur_menu == MENU_MAIN) {
-        seperation_space = 264;
+        seperation_space = 270;
 
         for (int i = 0; i < 12; ++i) {
-            int x = base_x + seperation_space * i - camera_offset_x;
+            int x = ((base_x + seperation_space * i) + 24) - camera_offset_x;
 
             SDL_Rect icon_rect = { x, base_y, spawn_box_size, spawn_box_size };
 
@@ -462,8 +487,8 @@ void update() {
             }
 
             if (i == cur_selected_tile && cur_selected_row == ROW_MIDDLE) {
-                const int outline_padding = 3;
-                const int outline_thickness = 4;
+                const int outline_padding = 4;
+                const int outline_thickness = 5;
 
                 SDL_Rect outline_rect = {
                     x - outline_padding,
@@ -475,7 +500,7 @@ void update() {
                 render_set_color(main_renderer, COLOR_CYAN);
 
                 if (i < (int)apps.size()) {
-                    font.renderText(main_renderer, apps[i].title, x + 120, base_y - 34, TextAlign::CENTER, -12, {0, 225, 255, 255});
+                    // draw text for apps[i].title
                 }
 
                 for (int t = 0; t < outline_thickness; ++t) {
@@ -511,7 +536,7 @@ void update() {
                 };
 
                 render_set_color(main_renderer, COLOR_BLUE);
-                font.renderText(main_renderer, "None"/**/, base_x + 8, y + 16, TextAlign::LEFT, -13, {15, 206, 185, 255});
+                // Draw text for the given option here:
 
                 for (int t = 0; t < outline_thickness; ++t) {
                     SDL_Rect thick_setting_rect = {
@@ -523,7 +548,7 @@ void update() {
                     SDL_RenderDrawRect(main_renderer, &thick_setting_rect);
                 }
             } else {
-                font.renderText(main_renderer, "None"/**/, base_x + 8, y + 16, TextAlign::LEFT, -13, {255, 255, 255, 255});
+                // Render the font for the given option
             }
         }
     }
@@ -547,6 +572,7 @@ void update() {
             SDL_Rect downloads_rect = { (start_x + 5 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
             SDL_Rect settings_rect = { (start_x + 6 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
             SDL_Rect power_rect = { (start_x + 7 * 107), cy, circle_diameter * 2, circle_diameter * 2 };
+            SDL_Rect reference_rect = { 0, 0, 1280, 720 };
 
             SDL_RenderCopy(main_renderer, circle, NULL, &dst_rect);
 
@@ -562,12 +588,13 @@ void update() {
             SDL_RenderCopy(main_renderer, downloads_icon, NULL, &downloads_rect);
             SDL_RenderCopy(main_renderer, settings_icon, NULL, &settings_rect);
             SDL_RenderCopy(main_renderer, power_icon, NULL, &power_rect);
+            //SDL_RenderCopy(main_renderer, reference, NULL, &reference_rect);
         }
     }
 
     // === Top Row (Fixed, 1 circle in top-right) ===
-    int top_x = 32;
-    int top_y = 0;
+    int top_x = 40;
+    int top_y = 16;
 
     SDL_Rect dst_rect_top = { top_x, top_y, 100, 100 };
     if ((cur_menu == MENU_MAIN) || (cur_menu == MENU_USER)) {
@@ -579,10 +606,13 @@ void update() {
     }
 
     if (cur_menu == MENU_SETTINGS) {
-        font.renderText(main_renderer, "System Settings", 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
+        // Render "System Settings"
     } else if (cur_menu == MENU_USER) {
         std::string title = std::string(ACCOUNT_ID) + "'s Page";
-        font.renderText(main_renderer, title.c_str(), 128, 32, TextAlign::LEFT, -13, {255, 255, 255, 255});
+        // render title
+    } else {
+        char batteryStr[32];
+        // render the battery life
     }
 
     // === Misc ===
@@ -593,23 +623,19 @@ void update() {
 
     render_set_color(main_renderer, COLOR_WHITE);
     if (menuOpen) {
-        SDL_RenderDrawLine(main_renderer, ((WINDOW_WIDTH / 28) + 85), WINDOW_HEIGHT - 90, ((WINDOW_WIDTH / 1.035) - 85), WINDOW_HEIGHT - 90);
+        SDL_RenderDrawLine(main_renderer, ((WINDOW_WIDTH / 40) + 85), WINDOW_HEIGHT - 70, ((WINDOW_WIDTH / 1.025) - 85), WINDOW_HEIGHT - 70);
     } else {
-        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, WINDOW_HEIGHT - 90, WINDOW_WIDTH / 1.035, WINDOW_HEIGHT - 90);
+        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 40, WINDOW_HEIGHT - 70, WINDOW_WIDTH / 1.025, WINDOW_HEIGHT - 70);
     }
 
     if (cur_menu != MENU_MAIN) {
-        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 28, 90, WINDOW_WIDTH / 1.035, 90);
+        SDL_RenderDrawLine(main_renderer, WINDOW_WIDTH / 40, 90, WINDOW_WIDTH / 1.025, 90);
     }
     if (menuOpen) {
-        SDL_RenderDrawLine(main_renderer, ((WINDOW_WIDTH / 28) + 85), 90, ((WINDOW_WIDTH / 1.035) - 85), 90);
+        SDL_RenderDrawLine(main_renderer, ((WINDOW_WIDTH / 40) + 85), 90, ((WINDOW_WIDTH / 1.025) - 85), 90);
     }
 
     SDL_RenderPresent(main_renderer);
-}
-
-inline bool RunningFromMiiMaker() {
-    return (OSGetTitleID() & 0xFFFFFFFFFFFFF0FFull) == 0x000500101004A000ull;
 }
 
 int main(int argc, char const *argv[]) {

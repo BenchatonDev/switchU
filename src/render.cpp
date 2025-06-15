@@ -29,20 +29,6 @@ void render_circle(SDL_Renderer *renderer, int32_t centreX, int32_t centreY, int
     }
 }
 
-void render_text(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x, int y, SDL_Color color) {
-    SDL_Surface* surface = TTF_RenderUTF8_Blended(font, text, color);
-    if (!surface) return;
-
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect dst = { x, y, surface->w, surface->h };
-
-    SDL_FreeSurface(surface);
-    if (!texture) return;
-
-    SDL_RenderCopy(renderer, texture, NULL, &dst);
-    SDL_DestroyTexture(texture);
-}
-
 void render_icon_with_background(SDL_Renderer* renderer, SDL_Texture* icon, int x, int y, int box_size) {
     if (!icon) return;
 
