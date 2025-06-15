@@ -133,6 +133,7 @@ public:
         }
 
         KPADRead(channel, &kpad, 1);
+        WPADGetInfo(channel, &wpadInfo);
 
         if (kpad.extensionType == WPAD_EXT_CORE || kpad.extensionType == WPAD_EXT_NUNCHUK) {
             data.buttons_r = remapWiiMoteButtons(kpad.release);
