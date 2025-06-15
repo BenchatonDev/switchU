@@ -393,15 +393,20 @@ void input(Input &input) {
                 }
             }
         } else {
-            if (cur_selected_tile == 1) {
+            if (cur_selected_tile == 0) {
+                printf("Launching MiiVerse !\n");
+                _SYSSwitchTo(SysAppPFID::SYSAPP_PFID_MIIVERSE);
+            } else if (cur_selected_tile == 1) {
                 const char* launch_path = "wiiu/apps/appstore/appstore.wuhb";
 
                 RPXLoaderStatus st = RPXLoader_LaunchHomebrew(launch_path);
                 printf("Launch status: %s\n", RPXLoader_GetStatusStr(st));
             } else if (cur_selected_tile == 3) {
-                uint64_t title_id = 0x000500301001210AULL;
-                printf("Title check: %s\n", SYSCheckTitleExists(title_id) ? "found" : "not found");
-                launch_title_if_exists(title_id);
+                printf("Launching the Browser !\n");
+                SYSSwitchToBrowser(nullptr);
+            } else if (cur_selected_tile == 5) {
+                printf("Launching Download Manager !\n");
+                _SYSSwitchTo(SysAppPFID::SYSAPP_PFID_DOWNLOAD_MANAGEMENT);
             } else if (cur_selected_tile == 6) {
                 cur_menu = MENU_SETTINGS;
             }
