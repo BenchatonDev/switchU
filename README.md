@@ -2,7 +2,10 @@
 A remake of the Nintendo Switch's UI for the Wii U
 
 ## Controls
-- `L Stick`: move around the menu
+- `L Stick/DPad`: move around the menu
+- `A Button`: enter menus, load games, ect.
+- `B Button`: close open menus or subcategories
+- `+ Button`: open the options menu for a game
 
 ## Building
 ### Dependencies
@@ -30,7 +33,7 @@ make (path to Makefile)
 ```
 
 # Credits
-- [DanielKO] For emotional support and helping me figure out the rpx loader
+- DanielKO For emotional support and helping me figure out the rpx loader
 - [BenchatonDev](https://github.com/BenchatonDev) Made the original repository I built this project on.
 - [Ashquarky](https://github.com/ashquarky) For porting SDL2 to Wii U
 - [Dimok](https://github.com/dimok789) For making VPADInput.h and WPADInput.h
