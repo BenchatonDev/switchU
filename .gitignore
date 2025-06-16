@@ -31,6 +31,8 @@
 *.exe
 *.out
 *.app
+*.wuhb
+*.rpx
 
 # VSCode
 .vscode
