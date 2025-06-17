@@ -211,7 +211,11 @@ void scan_apps(SDL_Renderer* renderer) {
     
     for (auto game : titles) {
         App entry = create_sysapp_entry(game, renderer);
-        apps.push_back(entry);
+        if (game.indexedDevice == "odd") {
+            apps.insert(apps.begin(), entry); // Making ODD Always First
+        } else {
+            apps.push_back(entry);
+        }
         printf("Loaded system app: %s -> %s\n", entry.title.c_str(), entry.app_path.c_str());
     }
     MCP_Close(handle);
