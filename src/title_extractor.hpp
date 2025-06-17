@@ -9,6 +9,7 @@
 struct App {
     std::string title;
     std::string app_path;
+    std::string storage_device;
     uint64_t titleid;
     SDL_Texture* icon;
 };

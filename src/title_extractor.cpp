@@ -81,6 +81,7 @@ App create_sysapp_entry(const MCPTitleListType& title_info, SDL_Renderer* render
     App entry = {
         title,
         ROOT_PATH + std::string(title_info.path),
+        title_info.indexedDevice,
         title_info.titleId,
         icon
     };
@@ -163,7 +164,7 @@ void scan_apps(SDL_Renderer* renderer) {
                 continue;
             }
 
-            App entry = { app_folder, launch_file, 0, icon };
+            App entry = { app_folder, launch_file, "sd", 0, icon };
             apps.push_back(entry);
             printf("Loaded app: %s -> %s\n", app_folder.c_str(), launch_file.c_str());
         }
@@ -211,9 +212,9 @@ void scan_apps(SDL_Renderer* renderer) {
     for (auto game : titles) {
         App entry = create_sysapp_entry(game, renderer);
         apps.push_back(entry);
-        
         printf("Loaded system app: %s -> %s\n", entry.title.c_str(), entry.app_path.c_str());
     }
+    MCP_Close(handle);
 }
 
 const char* get_selected_app_path() {
