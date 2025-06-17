@@ -64,18 +64,31 @@ App create_sysapp_entry(const MCPTitleListType& title_info, SDL_Renderer* render
         
     SDL_RWops* tmp = SDL_RWFromFile(app_icon.c_str(), "rb");
     SDL_Texture* icon = SDL_CreateTextureFromSurface(renderer, IMG_LoadTGA_RW(tmp));
+    SDL_FreeRW(tmp);
 
     if (!icon) {
         printf("Failed to read: %s\n", app_icon.c_str());
     }
-        
-    auto *metaXml = (ACPMetaXml *) calloc(1, 0x4000); // Wizardry from launchiine
-    if (metaXml) {
-        auto acp = ACPGetTitleMetaXml(title_info.titleId, metaXml);
-        if (acp >= 0) {
-            title = metaXml->longname_en;
-        } else printf("Failed to get title metaXML, placeholder name will be used\n");
-    free(metaXml);
+
+    std::string xml_path = ROOT_PATH + std::string(title_info.path) + "/meta/meta.xml";
+    FILE* file = fopen(xml_path.c_str(), "r");
+
+    if (!file) {
+        printf("Failed to open meta.xml for %s\n", xml_path.c_str());
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), file)) {
+        char* start = strstr(line, "<longname_en type=\"string\" length=\"512\">");
+        if (start) {
+            start += strlen("<longname_en type=\"string\" length=\"512\">");
+            char* end = strstr(start, "</longname_en>");
+            if (end) {
+                *end = '\0';
+                fclose(file);
+                title = std::string(start);
+            }
+        }
     }
 
     App entry = {

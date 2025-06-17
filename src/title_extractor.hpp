@@ -1,7 +1,6 @@
 #pragma once
 
 #include <coreinit/mcp.h>
-#include <nn/acp/title.h>
 #include <SDL2/SDL.h>
 #include <string>
 #include <vector>
