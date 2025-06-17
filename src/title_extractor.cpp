@@ -7,8 +7,6 @@
 #include <cstdio>
 #include <dirent.h>
 #include <sys/types.h>
-#include <vector>
-#include <string>
 
 #include "util.hpp"
 #include "title_extractor.hpp"
@@ -60,6 +58,36 @@ std::string get_title_from_meta(const char* path) {
     return "Unknown";
 }
 
+App create_sysapp_entry(const MCPTitleListType& title_info, SDL_Renderer* renderer) {
+    std::string title = "Unknown / Error";
+    std::string app_icon = ROOT_PATH + std::string(title_info.path) + "/meta/iconTex.tga";
+        
+    SDL_RWops* tmp = SDL_RWFromFile(app_icon.c_str(), "rb");
+    SDL_Texture* icon = SDL_CreateTextureFromSurface(renderer, IMG_LoadTGA_RW(tmp));
+
+    if (!icon) {
+        printf("Failed to read: %s\n", app_icon.c_str());
+    }
+        
+    auto *metaXml = (ACPMetaXml *) calloc(1, 0x4000); // Wizardry from launchiine
+    if (metaXml) {
+        auto acp = ACPGetTitleMetaXml(title_info.titleId, metaXml);
+        if (acp >= 0) {
+            title = metaXml->longname_en;
+        } else printf("Failed to get title metaXML, placeholder name will be used\n");
+    free(metaXml);
+    }
+
+    App entry = {
+        title,
+        ROOT_PATH + std::string(title_info.path),
+        title_info.titleId,
+        icon
+    };
+
+    return entry;
+}
+
 static std::string find_launchable_file(const std::string& app_dir) {
     DIR* dir = opendir(app_dir.c_str());
     if (!dir) return "";
@@ -98,6 +126,7 @@ void scan_apps(SDL_Renderer* renderer) {
         return;
     }
 
+    printf("Starting Hombrew app scan...\n");
     struct dirent* entry;
     while ((entry = readdir(dir)) != nullptr) {
         if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
@@ -134,18 +163,62 @@ void scan_apps(SDL_Renderer* renderer) {
                 continue;
             }
 
-            App entry = { app_folder, launch_file, icon };
+            App entry = { app_folder, launch_file, 0, icon };
             apps.push_back(entry);
             printf("Loaded app: %s -> %s\n", app_folder.c_str(), launch_file.c_str());
         }
     }
-
     closedir(dir);
+
+    printf("Starting System app scan...\n");
+    MCPError handle = MCP_Open();
+    if (handle < 0) {
+        printf("Failed to start MCP\n");
+        return;
+    }
+
+    uint32_t game_count = 0;
+    uint32_t title_count = MCP_TitleCount(handle);
+    if (title_count <= 0) {
+        printf("No titles found\n");
+        MCP_Close(handle);
+        return;
+    }
+    printf("Found %d apps\n", title_count);
+
+    // More stuff from Launchiine, my way only worked on Cemu for some reason
+    std::vector<MCPTitleListType> titles(title_count);
+    for (MCPAppType type : supported_sys_app_type) {
+        uint32_t game_count_per_type = 0;
+        MCPError err = MCP_TitleListByAppType(
+                 handle, type,&game_count_per_type, titles.data() + game_count,
+                 (titles.size() - game_count) * sizeof(decltype(titles)::value_type));
+
+        if (err < 0) {
+            printf("Failed to get installed games of type %d\n", type);
+            MCP_Close(handle);
+            return;
+        }
+
+        game_count += game_count_per_type;
+    }
+
+    if (game_count != titles.size()) {
+        titles.resize(game_count);
+    }
+    printf("Found %d system games\n", game_count);
+    
+    for (auto game : titles) {
+        App entry = create_sysapp_entry(game, renderer);
+        apps.push_back(entry);
+        
+        printf("Loaded system app: %s -> %s\n", entry.title.c_str(), entry.app_path.c_str());
+    }
 }
 
 const char* get_selected_app_path() {
     if (apps.empty()) return nullptr;
-    const std::string& full_path = apps[cur_selected_tile].launch_path;
+    const std::string& full_path = apps[cur_selected_tile].app_path;
     size_t pos = full_path.find("wiiu/apps/");
     if (pos == std::string::npos) return nullptr;
     printf("Selected index: %d, full path: %s, trimmed path: %s\n", cur_selected_tile, full_path.c_str(), full_path.c_str() + pos);
