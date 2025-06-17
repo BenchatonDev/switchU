@@ -8,6 +8,7 @@
 #include <sndcore2/core.h>
 #include <sysapp/launch.h>
 #include <sysapp/title.h>
+#include <nn/acp/title.h>
 #include <whb/proc.h>
 #include <stdio.h>
 #include <string.h>
@@ -114,11 +115,17 @@ SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     return texture;
 }
 
-void launch_title_if_exists(uint64_t titleID) {
-    if (SYSCheckTitleExists(titleID)) {
+void launch_system_title(uint64_t titleID) {
+    MCPTitleListType titleInfo;
+    int32_t handle = MCP_Open();
+    auto err       = MCP_GetTitleInfo(handle, titleID, &titleInfo);
+    MCP_Close(handle);
+
+    if (SYSCheckTitleExists(titleID) && err == ACP_RESULT_SUCCESS) {
+        ACPAssignTitlePatch(&titleInfo);
         SYSLaunchTitle(titleID);
     } else {
-        printf("Title not found.\n");
+        printf("Title not found or ACP error.\n");
     }
 }
 
@@ -382,11 +389,18 @@ void input(Input &input) {
             }
         } else if (cur_selected_row == ROW_MIDDLE) {
             if (cur_menu == MENU_MAIN) {
-                const char* launch_path = get_selected_app_path();
-                printf("Launching app with path: %s\n", launch_path);
+                if (cur_selected_tile < apps.size()) {
+                    if (apps[cur_selected_tile].titleid == 0) {
+                        const char* launch_path = get_selected_app_path();
+                        printf("Launching app with path: %s\n", launch_path);
 
-                RPXLoaderStatus st = RPXLoader_LaunchHomebrew(launch_path);
-                printf("Launch status: %s\n", RPXLoader_GetStatusStr(st));
+                        RPXLoaderStatus st = RPXLoader_LaunchHomebrew(launch_path);
+                        printf("Launch status: %s\n", RPXLoader_GetStatusStr(st));
+                    } else {
+                        printf("Launching system app with title ID: %llu\n", apps[cur_selected_tile].titleid);
+                        launch_system_title(apps[cur_selected_tile].titleid);
+                    }
+                }
             } else if (cur_menu == MENU_USER) {
                 if (cur_selected_subrow == 0) {
                     // Insert a profile subsubmenu thing
