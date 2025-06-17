@@ -19,6 +19,10 @@ static const std::vector<MCPAppType> supported_sys_app_type {
     MCP_APP_TYPE_GAME_WII
 };
 
+static const char device_odd[10] = "odd";
+static const char device_usb[10] = "usb";
+static const char device_mlc[10] = "mlc";
+
 extern std::vector<App> apps;
 extern int cur_selected_tile;
 

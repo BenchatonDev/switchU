@@ -209,9 +209,10 @@ void scan_apps(SDL_Renderer* renderer) {
     }
     printf("Found %d system games\n", game_count);
     
+    
     for (auto game : titles) {
         App entry = create_sysapp_entry(game, renderer);
-        if (game.indexedDevice == "odd") {
+        if (entry.storage_device == device_odd) {
             apps.insert(apps.begin(), entry); // Making ODD Always First
         } else {
             apps.push_back(entry);
@@ -219,6 +220,15 @@ void scan_apps(SDL_Renderer* renderer) {
         printf("Loaded system app: %s -> %s\n", entry.title.c_str(), entry.app_path.c_str());
     }
     MCP_Close(handle);
+
+    const char* path_char = SD_CARD_PATH "scanresult.txt";
+    std::string path = path_char;
+    FILE* out = fopen(path.c_str(), "w");
+    for (auto app : apps) {
+        fprintf(out,    "App: %s, Path: %s, Device: %s, TitleID: %llu\n",
+               app.title.c_str(), app.app_path.c_str(), app.storage_device.c_str(), app.titleid);
+    }
+    fclose(out);
 }
 
 const char* get_selected_app_path() {
