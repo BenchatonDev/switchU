@@ -48,6 +48,7 @@ static bool up_scrolling = false;
 static bool down_scrolling = false;
 static bool game_launched = false;
 bool menuOpen = false;
+bool load_homebrew_titles = true;
 int battery_level = 0.0;
 
 int seperation_space = 264;
@@ -440,6 +441,13 @@ void input(Input &input) {
         if ((cur_menu == MENU_MAIN) && (cur_selected_row == ROW_MIDDLE)) {
             menuOpen = true;
         }
+    }
+
+    // Developer note: make this an option toggle in the settings menu later
+    if (input.data.buttons_d & VPAD_BUTTON_MINUS) {
+        load_homebrew_titles = !load_homebrew_titles;
+        printf("Toggled homebrew title loading: %s\n", load_homebrew_titles ? "ON" : "OFF");
+        scan_apps(main_renderer);
     }
 
     if (cur_selected_row == ROW_TOP) {

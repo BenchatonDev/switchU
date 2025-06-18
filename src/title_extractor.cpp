@@ -12,18 +12,9 @@
 #include "title_extractor.hpp"
 
 int MAX_GAME_LOADS = 12;
+extern bool load_homebrew_titles;
 
 std::vector<App> apps;
-
-std::string sanitize_title_for_path(const std::string& title) {
-    std::string sanitized = title;
-    for (char& c : sanitized) {
-        if (!(isalnum(c) || c == '_' || c == '-' || c == ' ')) {
-            c = '_';  // Replace anything not a-zA-Z0-9_-space with underscore
-        }
-    }
-    return sanitized;
-}
 
 std::unordered_set<std::string> load_ignored_apps() {
     std::unordered_set<std::string> ignored;
@@ -162,58 +153,62 @@ void scan_apps(SDL_Renderer* renderer) {
 
     std::unordered_set<std::string> ignored_apps = load_ignored_apps();
 
-    DIR* dir = opendir(apps_dir);
-    if (!dir) {
-        printf("Failed to open apps directory\n");
-        return;
-    }
-
-    printf("Starting Hombrew app scan...\n");
-    struct dirent* entry;
-    int loaded_count = 0;
-
-    while ((entry = readdir(dir)) != nullptr && loaded_count < MAX_GAME_LOADS) {
-        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
-            std::string app_folder = entry->d_name;
-
-            if (ignored_apps.find(app_folder) != ignored_apps.end()) {
-                printf("Skipping ignored app: %s\n", app_folder.c_str());
-                continue;
-            }
-
-            std::string app_path = std::string(apps_dir) + app_folder;
-
-            std::string launch_file = find_launchable_file(app_path);
-            if (launch_file.empty()) {
-                printf("No launchable .wuhb or .rpx found in %s\n", app_folder.c_str());
-                continue;
-            }
-
-            std::string custom_icon_path = std::string(custom_icons_dir) + app_folder + "/icon.png";
-            std::string default_icon_path = app_path + "/icon.png";
-
-            SDL_Texture* icon = nullptr;
-
-            FILE* test = fopen(custom_icon_path.c_str(), "rb");
-            if (test) {
-                fclose(test);
-                icon = load_texture(custom_icon_path.c_str(), renderer);
-            } else {
-                icon = load_texture(default_icon_path.c_str(), renderer);
-            }
-
-            if (!icon) {
-                printf("No icon for app: %s\n", app_folder.c_str());
-                continue;
-            }
-
-            App entry = { app_folder, launch_file, "sd", 0, icon };
-            apps.push_back(entry);
-            loaded_count++;
-            printf("Loaded app: %s -> %s\n", app_folder.c_str(), launch_file.c_str());
+    if (load_homebrew_titles) {
+        DIR* dir = opendir(apps_dir);
+        if (!dir) {
+            printf("Failed to open apps directory\n");
+            return;
         }
+
+        printf("Starting Hombrew app scan...\n");
+        struct dirent* entry;
+        int loaded_count = 0;
+
+        while ((entry = readdir(dir)) != nullptr && loaded_count < MAX_GAME_LOADS) {
+            if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
+                std::string app_folder = entry->d_name;
+
+                if (ignored_apps.find(app_folder) != ignored_apps.end()) {
+                    printf("Skipping ignored app: %s\n", app_folder.c_str());
+                    continue;
+                }
+
+                std::string app_path = std::string(apps_dir) + app_folder;
+
+                std::string launch_file = find_launchable_file(app_path);
+                if (launch_file.empty()) {
+                    printf("No launchable .wuhb or .rpx found in %s\n", app_folder.c_str());
+                    continue;
+                }
+
+                std::string custom_icon_path = std::string(custom_icons_dir) + app_folder + "/icon.png";
+                std::string default_icon_path = app_path + "/icon.png";
+
+                SDL_Texture* icon = nullptr;
+
+                FILE* test = fopen(custom_icon_path.c_str(), "rb");
+                if (test) {
+                    fclose(test);
+                    icon = load_texture(custom_icon_path.c_str(), renderer);
+                } else {
+                    icon = load_texture(default_icon_path.c_str(), renderer);
+                }
+
+                if (!icon) {
+                    printf("No icon for app: %s\n", app_folder.c_str());
+                    continue;
+                }
+
+                App entry = { app_folder, launch_file, "sd", 0, icon };
+                apps.push_back(entry);
+                loaded_count++;
+                printf("Loaded app: %s -> %s\n", app_folder.c_str(), launch_file.c_str());
+            }
+        }
+        closedir(dir);
+    } else {
+        printf("Skipping Homebrew application scan due to its setting being disabled.\n");
     }
-    closedir(dir);
 
     printf("Starting System app scan...\n");
     MCPError handle = MCP_Open();
@@ -256,6 +251,13 @@ void scan_apps(SDL_Renderer* renderer) {
     for (auto game : titles) {
         if (apps.size() >= MAX_GAME_LOADS) break;
         App entry = create_sysapp_entry(game, renderer);
+        std::string safe_name = sanitize_title_for_path(entry.title);
+
+        if (ignored_apps.find(safe_name) != ignored_apps.end()) {
+            printf("Skipping ignored system app: %s (safe: %s)\n", entry.title.c_str(), safe_name.c_str());
+            continue;
+        }
+
         if (entry.storage_device == device_odd) {
             apps.insert(apps.begin(), entry); // Making ODD Always First
         } else {

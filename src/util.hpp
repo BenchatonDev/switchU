@@ -8,3 +8,5 @@
 extern std::string ACCOUNT_ID;
 
 void get_user_information();
+
+std::string sanitize_title_for_path(const std::string& title);
