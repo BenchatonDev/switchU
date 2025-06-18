@@ -11,7 +11,19 @@
 #include "util.hpp"
 #include "title_extractor.hpp"
 
+int MAX_GAME_LOADS = 12;
+
 std::vector<App> apps;
+
+std::string sanitize_title_for_path(const std::string& title) {
+    std::string sanitized = title;
+    for (char& c : sanitized) {
+        if (!(isalnum(c) || c == '_' || c == '-' || c == ' ')) {
+            c = '_';  // Replace anything not a-zA-Z0-9_-space with underscore
+        }
+    }
+    return sanitized;
+}
 
 std::unordered_set<std::string> load_ignored_apps() {
     std::unordered_set<std::string> ignored;
@@ -60,40 +72,55 @@ std::string get_title_from_meta(const char* path) {
 
 App create_sysapp_entry(const MCPTitleListType& title_info, SDL_Renderer* renderer) {
     std::string title = "Unknown / Error";
-    std::string app_icon = ROOT_PATH + std::string(title_info.path) + "/meta/iconTex.tga";
-        
-    SDL_RWops* tmp = SDL_RWFromFile(app_icon.c_str(), "rb");
-    SDL_Texture* icon = SDL_CreateTextureFromSurface(renderer, IMG_LoadTGA_RW(tmp));
-    SDL_FreeRW(tmp);
+    std::string base_path = ROOT_PATH + std::string(title_info.path);
+    std::string meta_path = base_path + "/meta/meta.xml";
+    std::string app_icon = base_path + "/meta/iconTex.tga";
 
-    if (!icon) {
-        printf("Failed to read: %s\n", app_icon.c_str());
-    }
-
-    std::string xml_path = ROOT_PATH + std::string(title_info.path) + "/meta/meta.xml";
-    FILE* file = fopen(xml_path.c_str(), "r");
-
-    if (!file) {
-        printf("Failed to open meta.xml for %s\n", xml_path.c_str());
-    }
-
-    char line[512];
-    while (fgets(line, sizeof(line), file)) {
-        char* start = strstr(line, "<longname_en type=\"string\" length=\"512\">");
-        if (start) {
-            start += strlen("<longname_en type=\"string\" length=\"512\">");
-            char* end = strstr(start, "</longname_en>");
-            if (end) {
-                *end = '\0';
-                fclose(file);
-                title = std::string(start);
+    // Parse title from meta.xml
+    FILE* file = fopen(meta_path.c_str(), "r");
+    if (file) {
+        char line[512];
+        while (fgets(line, sizeof(line), file)) {
+            char* start = strstr(line, "<longname_en type=\"string\" length=\"512\">");
+            if (start) {
+                start += strlen("<longname_en type=\"string\" length=\"512\">");
+                char* end = strstr(start, "</longname_en>");
+                if (end) {
+                    *end = '\0';
+                    title = std::string(start);
+                    break;
+                }
             }
+        }
+        fclose(file);
+    } else {
+        printf("Failed to open meta.xml for %s\n", meta_path.c_str());
+    }
+
+    // Attempt to load custom icon from SD
+    std::string safe_folder_name = sanitize_title_for_path(title);
+    std::string custom_icon_path = SD_CARD_PATH "switchU/custom_icons/" + safe_folder_name + "/icon.png";
+    SDL_Texture* icon = load_texture(custom_icon_path.c_str(), renderer);
+
+    // Fallback to iconTex.tga if custom icon not found
+    if (!icon) {
+        SDL_RWops* tmp = SDL_RWFromFile(app_icon.c_str(), "rb");
+        if (tmp) {
+            SDL_Surface* surface = IMG_LoadTGA_RW(tmp);
+            if (surface) {
+                icon = SDL_CreateTextureFromSurface(renderer, surface);
+                SDL_FreeSurface(surface);
+            }
+            SDL_FreeRW(tmp);
+        }
+        if (!icon) {
+            printf("Failed to load icon for system app: %s\n", title.c_str());
         }
     }
 
     App entry = {
         title,
-        ROOT_PATH + std::string(title_info.path),
+        base_path,
         title_info.indexedDevice,
         title_info.titleId,
         icon
@@ -108,8 +135,9 @@ static std::string find_launchable_file(const std::string& app_dir) {
 
     std::string found_rpx, found_wuhb;
     struct dirent* entry;
+    int loaded_count = 0;
 
-    while ((entry = readdir(dir)) != nullptr) {
+    while ((entry = readdir(dir)) != nullptr && loaded_count < MAX_GAME_LOADS) {
         std::string fname = entry->d_name;
 
         if (fname.size() >= 5 && fname.substr(fname.size() - 5) == ".wuhb") {
@@ -142,7 +170,9 @@ void scan_apps(SDL_Renderer* renderer) {
 
     printf("Starting Hombrew app scan...\n");
     struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr) {
+    int loaded_count = 0;
+
+    while ((entry = readdir(dir)) != nullptr && loaded_count < MAX_GAME_LOADS) {
         if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
             std::string app_folder = entry->d_name;
 
@@ -179,6 +209,7 @@ void scan_apps(SDL_Renderer* renderer) {
 
             App entry = { app_folder, launch_file, "sd", 0, icon };
             apps.push_back(entry);
+            loaded_count++;
             printf("Loaded app: %s -> %s\n", app_folder.c_str(), launch_file.c_str());
         }
     }
@@ -221,9 +252,9 @@ void scan_apps(SDL_Renderer* renderer) {
         titles.resize(game_count);
     }
     printf("Found %d system games\n", game_count);
-    
-    
+
     for (auto game : titles) {
+        if (apps.size() >= MAX_GAME_LOADS) break;
         App entry = create_sysapp_entry(game, renderer);
         if (entry.storage_device == device_odd) {
             apps.insert(apps.begin(), entry); // Making ODD Always First
