@@ -1,29 +1,13 @@
 _EnvSwap
-am64ds
 homebrew_launcher
 appstore
 save
-ftpiiu_everywhere
-AromaUpdater
-Coop
-Koopair
 lovepotion
 Bloopair_pair_menu
-disc2appWUTPort
-dumpling
-ftpiiu_everywhere
-geckiine
-moonlight
-NooDS
 retroarch
-SaveMiiModWUTPort
 ScreenshotManager
-SDCafiine
 swapdrc
 theme-manager
-UFDiine
-vgedit
-WiiU-Shell
 wup_installer_gx2
-MultiDRCSpaceDemo
-SonicCD
+SPHERE SLICE
+WUP Installer GX2
