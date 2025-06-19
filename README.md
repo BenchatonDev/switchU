@@ -7,6 +7,9 @@ A remake of the Nintendo Switch's UI for the Wii U
 - `B Button`: close open menus or subcategories
 - `+ Button`: open the options menu for a game
 
+## Misc:
+- `You can ignore games by creating an "ignore.txt" file in your "sd://switchU/" folder.`
+
 ## Building
 ### Dependencies
 - [wut](https://github.com/devkitPro/wut)
