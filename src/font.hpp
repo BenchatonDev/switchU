@@ -8,7 +8,7 @@ public:
     TTFText(SDL_Renderer* renderer);
     ~TTFText();
 
-    bool loadFont(const std::string& path, int size);
+    bool loadFont(const std::string& path, int size, bool bold);
     SDL_Texture* renderText(const std::string& message, SDL_Color color);
     void renderTextAt(const std::string& message, SDL_Color color, int x, int y);
 

@@ -169,7 +169,7 @@ int initialize() {
     main_renderer = SDL_CreateRenderer(main_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     textRenderer = new TTFText(main_renderer);
-    if (!textRenderer->loadFont(SD_CARD_PATH "switchU/fonts/font.ttf", 24)) {
+    if (!textRenderer->loadFont(SD_CARD_PATH "switchU/fonts/font.ttf", 24, true)) {
         printf("Failed to load font!");
     }
 

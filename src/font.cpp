@@ -12,14 +12,19 @@ TTFText::~TTFText() {
     TTF_Quit();
 }
 
-bool TTFText::loadFont(const std::string& path, int size) {
+bool TTFText::loadFont(const std::string& path, int size, bool bold) {
     font = TTF_OpenFont(path.c_str(), size);
     if (!font) {
         std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
         return false;
     }
+
+    if (bold) {
+        TTF_SetFontStyle(font, TTF_STYLE_BOLD);
+    }
     return true;
 }
+
 
 SDL_Texture* TTFText::renderText(const std::string& message, SDL_Color color) {
     if (!font) return nullptr;
