@@ -9,6 +9,7 @@ A remake of the Nintendo Switch's UI for the Wii U
 
 ## Misc:
 - `You can ignore games by creating an "ignore.txt" file in your "sd://switchU/" folder.`
+- `You can create custom icons for any game in the "sd://switchU/custom_icons/" folder!`
 
 ## Building
 ### Dependencies
