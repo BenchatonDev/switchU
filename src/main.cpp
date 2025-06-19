@@ -47,7 +47,6 @@ static bool left_scrolling = false;
 static bool right_scrolling = false;
 static bool up_scrolling = false;
 static bool down_scrolling = false;
-static bool game_launched = false;
 bool menuOpen = false;
 bool load_homebrew_titles = false;
 int battery_level = 0.0;
@@ -134,7 +133,7 @@ void launch_system_title(uint64_t titleID) {
 
 int initialize() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL_Init failed with error: ", SDL_GetError(), "\n");
+        printf("SDL_Init failed with error: %s\n", SDL_GetError());
         return EXIT_FAILURE;
     }
 
@@ -152,7 +151,7 @@ int initialize() {
         0);
 
     if (!main_window) {
-        printf("SDL_CreateWindow failed with error: ", SDL_GetError(), "\n");
+        printf("SDL_CreateWindow failed with error: %s\n", SDL_GetError());
         SDL_Quit();
         return EXIT_FAILURE;
     }
@@ -402,7 +401,7 @@ void input(Input &input) {
             }
         } else if (cur_selected_row == ROW_MIDDLE) {
             if (cur_menu == MENU_MAIN) {
-                if (cur_selected_tile < apps.size()) {
+                if (static_cast<size_t>(cur_selected_tile) < apps.size()) {
                     if (apps[cur_selected_tile].titleid == 0) {
                         const char* launch_path = get_selected_app_path();
                         printf("Launching app with path: %s\n", launch_path);
@@ -549,8 +548,6 @@ void update() {
         for (int i = 0; i < settings_row_count; ++i) {
             int y = sub_base_y + seperation_space * i;
 
-            SDL_Rect setting_rect = { base_x, y, 256, 64 };
-
             render_set_color(main_renderer, COLOR_WHITE);
 
             if (i == cur_selected_subrow) {
@@ -617,7 +614,7 @@ void update() {
             SDL_RenderCopy(main_renderer, downloads_icon, NULL, &downloads_rect);
             SDL_RenderCopy(main_renderer, settings_icon, NULL, &settings_rect);
             SDL_RenderCopy(main_renderer, power_icon, NULL, &power_rect);
-            //SDL_RenderCopy(main_renderer, reference, NULL, &reference_rect);
+            SDL_RenderCopy(main_renderer, reference, NULL, &reference_rect);
         }
     }
 
@@ -641,8 +638,7 @@ void update() {
         // render title
     } else {
         std::string battery = std::to_string(battery_level) + "%";
-        textRenderer->renderTextAt(battery, {255, 255, 255, 255}, WINDOW_WIDTH - 145, 55);
-        // Dev note: we need to add text anchoring!!!
+        textRenderer->renderTextAt(battery, {255, 255, 255, 255}, WINDOW_WIDTH - 100, 53, TextAlign::Right);
     }
 
     // === Misc ===

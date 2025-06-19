@@ -249,7 +249,7 @@ void scan_apps(SDL_Renderer* renderer) {
     printf("Found %d system games\n", game_count);
 
     for (auto game : titles) {
-        if (apps.size() >= MAX_GAME_LOADS) break;
+        if (apps.size() >= static_cast<size_t>(MAX_GAME_LOADS)) break;
         App entry = create_sysapp_entry(game, renderer);
         std::string safe_name = sanitize_title_for_path(entry.title);
 

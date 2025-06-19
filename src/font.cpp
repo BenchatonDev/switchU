@@ -22,9 +22,9 @@ bool TTFText::loadFont(const std::string& path, int size, bool bold) {
     if (bold) {
         TTF_SetFontStyle(font, TTF_STYLE_BOLD);
     }
+
     return true;
 }
-
 
 SDL_Texture* TTFText::renderText(const std::string& message, SDL_Color color) {
     if (!font) return nullptr;
@@ -35,13 +35,28 @@ SDL_Texture* TTFText::renderText(const std::string& message, SDL_Color color) {
     return texture;
 }
 
-void TTFText::renderTextAt(const std::string& message, SDL_Color color, int x, int y) {
+void TTFText::renderTextAt(const std::string& message, SDL_Color color, int x, int y, TextAlign align) {
     SDL_Texture* texture = renderText(message, color);
     if (!texture) return;
 
     int w, h;
     SDL_QueryTexture(texture, nullptr, nullptr, &w, &h);
+
     SDL_Rect dst = { x, y, w, h };
+
+    // Adjust x based on alignment
+    switch (align) {
+        case TextAlign::Center:
+            dst.x -= w / 2;
+            break;
+        case TextAlign::Right:
+            dst.x -= w;
+            break;
+        case TextAlign::Left:
+        default:
+            break;
+    }
+
     SDL_RenderCopy(renderer, texture, nullptr, &dst);
     SDL_DestroyTexture(texture);
 }
