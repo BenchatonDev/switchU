@@ -58,6 +58,11 @@ struct UITextures {
     // Hud Elements
     SDL_Texture* circle = nullptr;
     SDL_Texture* circle_selection = nullptr;
+    SDL_Texture* battery_full = nullptr;
+    SDL_Texture* battery_three_fourths = nullptr;
+    SDL_Texture* battery_half = nullptr;
+    SDL_Texture* battery_needs_charge = nullptr;
+    SDL_Texture* battery_base = nullptr;
 
     // Bottom Row
     SDL_Texture* miiverse = nullptr;
@@ -196,6 +201,12 @@ int initialize() {
 
     textures.circle = load_texture(SD_CARD_PATH "switchU/assets/ui_button.png", main_renderer);
     textures.circle_selection = load_texture(SD_CARD_PATH "switchU/assets/ui_button_selected.png", main_renderer);
+    textures.battery_full = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_full.png", main_renderer);
+    textures.battery_three_fourths = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_three_fourths.png", main_renderer);
+    textures.battery_half = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_half.png", main_renderer);
+    textures.battery_needs_charge = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_needs_charge.png", main_renderer);
+    textures.battery_base = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_base.png", main_renderer);
+
     textures.miiverse = load_texture(SD_CARD_PATH "switchU/assets/miiverse.png", main_renderer);
     textures.eshop = load_texture(SD_CARD_PATH "switchU/assets/eshop.png", main_renderer);
     textures.screenshots = load_texture(SD_CARD_PATH "switchU/assets/screenshots.png", main_renderer);
@@ -205,6 +216,7 @@ int initialize() {
     textures.settings = load_texture(SD_CARD_PATH "switchU/assets/settings.png", main_renderer);
     textures.power = load_texture(SD_CARD_PATH "switchU/assets/power.png", main_renderer);
     textures.reference = load_texture(SD_CARD_PATH "switchU/assets/reference.png", main_renderer);
+
     textures.a_button = load_texture(SD_CARD_PATH "switchU/assets/buttons/button_a.png", main_renderer);
 
     get_user_information();
@@ -578,7 +590,19 @@ void update() {
         // render title
     } else {
         std::string battery = std::to_string(battery_level) + "%";
+        SDL_Rect battery_rect = { Config::WINDOW_WIDTH - 102, 51, 46, 28 };
         textRenderer->renderTextAt(battery, {255, 255, 255, 255}, Config::WINDOW_WIDTH - 100, 53, TextAlign::Right);
+        SDL_RenderCopy(main_renderer, textures.battery_base, NULL, &battery_rect);
+
+        if ((battery_level >= 0) && (battery_level <= 25)) {
+            SDL_RenderCopy(main_renderer, textures.battery_needs_charge, NULL, &battery_rect);
+        } else if ((battery_level >= 25) && (battery_level <= 50)) {
+            SDL_RenderCopy(main_renderer, textures.battery_half, NULL, &battery_rect);
+        } else if ((battery_level >= 50) && (battery_level <= 75)) {
+            SDL_RenderCopy(main_renderer, textures.battery_three_fourths, NULL, &battery_rect);
+        } else if (battery_level >= 75) {
+            SDL_RenderCopy(main_renderer, textures.battery_full, NULL, &battery_rect);
+        }
     }
 
     // === Misc ===
