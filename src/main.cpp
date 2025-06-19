@@ -48,7 +48,7 @@ static bool up_scrolling = false;
 static bool down_scrolling = false;
 static bool game_launched = false;
 bool menuOpen = false;
-bool load_homebrew_titles = true;
+bool load_homebrew_titles = false;
 int battery_level = 0.0;
 
 int seperation_space = 264;
@@ -491,7 +491,7 @@ void update() {
     if (cur_menu == MENU_MAIN) {
         seperation_space = 270;
 
-        for (int i = 0; i < 12; ++i) {
+        for (int i = 0; i < TILE_COUNT_MIDDLE; ++i) {
             int x = ((base_x + seperation_space * i) + 24) - camera_offset_x;
 
             SDL_Rect icon_rect = { x, base_y, spawn_box_size, spawn_box_size };
