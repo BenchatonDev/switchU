@@ -55,8 +55,11 @@ namespace Config {
 }
 
 struct UITextures {
+    // Hud Elements
     SDL_Texture* circle = nullptr;
     SDL_Texture* circle_selection = nullptr;
+
+    // Bottom Row
     SDL_Texture* miiverse = nullptr;
     SDL_Texture* eshop = nullptr;
     SDL_Texture* screenshots = nullptr;
@@ -66,6 +69,9 @@ struct UITextures {
     SDL_Texture* settings = nullptr;
     SDL_Texture* power = nullptr;
     SDL_Texture* reference = nullptr;
+
+    // Buttons
+    SDL_Texture* a_button = nullptr;
 
     void destroyAll(SDL_Renderer* renderer) {
         auto destroy = [](SDL_Texture*& tex) {
@@ -199,6 +205,7 @@ int initialize() {
     textures.settings = load_texture(SD_CARD_PATH "switchU/assets/settings.png", main_renderer);
     textures.power = load_texture(SD_CARD_PATH "switchU/assets/power.png", main_renderer);
     textures.reference = load_texture(SD_CARD_PATH "switchU/assets/reference.png", main_renderer);
+    textures.a_button = load_texture(SD_CARD_PATH "switchU/assets/buttons/button_a.png", main_renderer);
 
     get_user_information();
 
@@ -592,6 +599,18 @@ void update() {
     }
     if (menuOpen) {
         SDL_RenderDrawLine(main_renderer, ((Config::WINDOW_WIDTH / 40) + 85), 90, ((Config::WINDOW_WIDTH / 1.025) - 85), 90);
+    }
+
+    SDL_Rect button_a_rect_1 = { Config::WINDOW_WIDTH - 145, Config::WINDOW_HEIGHT - 60, 48, 48 };
+    SDL_Rect button_a_rect_2 = { Config::WINDOW_WIDTH - 160, Config::WINDOW_HEIGHT - 60, 48, 48 };
+    if (cur_menu == MENU_MAIN) {
+        if ((cur_selected_row == ROW_TOP) || (cur_selected_row == ROW_BOTTOM)) {
+            SDL_RenderCopy(main_renderer, textures.a_button, NULL, &button_a_rect_1);
+            textRenderer->renderTextAt("OK", {255, 255, 255, 255}, Config::WINDOW_WIDTH - 96, Config::WINDOW_HEIGHT - 49, TextAlign::Left);
+        } else {
+            SDL_RenderCopy(main_renderer, textures.a_button, NULL, &button_a_rect_2);
+            textRenderer->renderTextAt("Start", {255, 255, 255, 255}, Config::WINDOW_WIDTH - 115, Config::WINDOW_HEIGHT - 49, TextAlign::Left);
+        }
     }
 
     SDL_RenderPresent(main_renderer);
