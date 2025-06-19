@@ -77,6 +77,7 @@ struct UITextures {
 
     // Buttons
     SDL_Texture* a_button = nullptr;
+    SDL_Texture* plus_button = nullptr;
 
     void destroyAll(SDL_Renderer* renderer) {
         auto destroy = [](SDL_Texture*& tex) {
@@ -218,6 +219,7 @@ int initialize() {
     textures.reference = load_texture(SD_CARD_PATH "switchU/assets/reference.png", main_renderer);
 
     textures.a_button = load_texture(SD_CARD_PATH "switchU/assets/buttons/button_a.png", main_renderer);
+    textures.plus_button = load_texture(SD_CARD_PATH "switchU/assets/buttons/button_plus.png", main_renderer);
 
     get_user_information();
 
@@ -479,7 +481,7 @@ void update() {
                 render_set_color(main_renderer, COLOR_CYAN);
 
                 if (i < (int)apps.size()) {
-                    // draw text for apps[i].title
+                    textRenderer->renderTextAt(apps[i].title, {0, 255, 245, 255}, x - 8, base_y - 35, TextAlign::Left);
                 }
 
                 for (int t = 0; t < outline_thickness; ++t) {
@@ -513,7 +515,7 @@ void update() {
                 };
 
                 render_set_color(main_renderer, COLOR_BLUE);
-                // Draw text for the given option here:
+                textRenderer->renderTextAt("None" /*Put the name of the option here later*/, {15, 206, 185, 255}, base_x + 8, y + 16, TextAlign::Left);
 
                 for (int t = 0; t < outline_thickness; ++t) {
                     SDL_Rect thick_setting_rect = {
@@ -525,7 +527,7 @@ void update() {
                     SDL_RenderDrawRect(main_renderer, &thick_setting_rect);
                 }
             } else {
-                // Render the font for the given option?
+                textRenderer->renderTextAt("None" /*Put the name of the option here later*/, {255, 255, 255, 255}, base_x + 8, y + 16, TextAlign::Left);
             }
         }
     }
@@ -584,10 +586,10 @@ void update() {
     }
 
     if (cur_menu == MENU_SETTINGS) {
-        // Render "System Settings"
+        textRenderer->renderTextAt("System Settings", {255, 255, 255, 255}, 128, 32, TextAlign::Left);
     } else if (cur_menu == MENU_USER) {
         std::string title = std::string(ACCOUNT_ID) + "'s Page";
-        // render title
+        textRenderer->renderTextAt(title.c_str(), {255, 255, 255, 255}, 128, 32, TextAlign::Left);
     } else {
         std::string battery = std::to_string(battery_level) + "%";
         SDL_Rect battery_rect = { Config::WINDOW_WIDTH - 102, 51, 46, 28 };
@@ -627,13 +629,16 @@ void update() {
 
     SDL_Rect button_a_rect_1 = { Config::WINDOW_WIDTH - 145, Config::WINDOW_HEIGHT - 60, 48, 48 };
     SDL_Rect button_a_rect_2 = { Config::WINDOW_WIDTH - 160, Config::WINDOW_HEIGHT - 60, 48, 48 };
+    SDL_Rect button_plus_rect = { Config::WINDOW_WIDTH - 328, Config::WINDOW_HEIGHT - 60, 48, 48 };
     if (cur_menu == MENU_MAIN) {
         if ((cur_selected_row == ROW_TOP) || (cur_selected_row == ROW_BOTTOM)) {
             SDL_RenderCopy(main_renderer, textures.a_button, NULL, &button_a_rect_1);
             textRenderer->renderTextAt("OK", {255, 255, 255, 255}, Config::WINDOW_WIDTH - 96, Config::WINDOW_HEIGHT - 49, TextAlign::Left);
         } else {
             SDL_RenderCopy(main_renderer, textures.a_button, NULL, &button_a_rect_2);
+            SDL_RenderCopy(main_renderer, textures.plus_button, NULL, &button_plus_rect);
             textRenderer->renderTextAt("Start", {255, 255, 255, 255}, Config::WINDOW_WIDTH - 115, Config::WINDOW_HEIGHT - 49, TextAlign::Left);
+            textRenderer->renderTextAt("Options", {255, 255, 255, 255}, Config::WINDOW_WIDTH - 283, Config::WINDOW_HEIGHT - 49, TextAlign::Left);
         }
     }
 
