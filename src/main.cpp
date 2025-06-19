@@ -23,6 +23,7 @@
 #include "render.hpp"
 #include "util.hpp"
 #include "title_extractor.hpp"
+#include "font.hpp"
 
 enum RowSelection {
     ROW_TOP = 0,
@@ -92,6 +93,7 @@ SDL_Texture* downloads_icon = NULL;
 SDL_Texture* settings_icon = NULL;
 SDL_Texture* power_icon = NULL;
 SDL_Texture* reference = NULL;
+TTFText* textRenderer = NULL;
 
 SDL_Texture* load_texture(const char* path, SDL_Renderer* renderer) {
     SDL_RWops* rw = SDL_RWFromFile(path, "rb");
@@ -159,8 +161,17 @@ int initialize() {
         printf("Failed to initialize SDL_image for PNG files: %s\n", IMG_GetError());
     }
 
+    if (TTF_Init() == -1) {
+        printf("TTF_Init failed: %s\n", TTF_GetError());
+    }
+
     // Handle renderer creation
     main_renderer = SDL_CreateRenderer(main_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+    textRenderer = new TTFText(main_renderer);
+    if (!textRenderer->loadFont(SD_CARD_PATH "switchU/fonts/font.ttf", 24)) {
+        printf("Failed to load font!");
+    }
 
     circle = load_texture(SD_CARD_PATH "switchU/assets/ui_button.png", main_renderer);
     if (!circle) {
@@ -278,6 +289,7 @@ void shutdown() {
 
     AXQuit();
 
+    TTF_Quit();
     SDL_DestroyWindow(main_window);
     SDL_DestroyRenderer(main_renderer);
     SDL_Quit();
@@ -565,7 +577,7 @@ void update() {
                     SDL_RenderDrawRect(main_renderer, &thick_setting_rect);
                 }
             } else {
-                // Render the font for the given option
+                // Render the font for the given option?
             }
         }
     }
@@ -629,7 +641,8 @@ void update() {
         // render title
     } else {
         std::string battery = std::to_string(battery_level) + "%";
-        // render the battery life
+        textRenderer->renderTextAt(battery, {255, 255, 255, 255}, WINDOW_WIDTH - 145, 55);
+        // Dev note: we need to add text anchoring!!!
     }
 
     // === Misc ===
