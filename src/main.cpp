@@ -457,6 +457,7 @@ void update() {
 
         for (int i = 0; i < Config::TILE_COUNT_MIDDLE; ++i) {
             int x = ((base_x + seperation_space * i) + 24) - camera_offset_x;
+            int title_x = (((base_x + seperation_space * i) + 24) + (Config::spawn_box_size/2)) - camera_offset_x;
 
             SDL_Rect icon_rect = { x, base_y, Config::spawn_box_size, Config::spawn_box_size };
 
@@ -481,7 +482,7 @@ void update() {
                 render_set_color(main_renderer, COLOR_CYAN);
 
                 if (i < (int)apps.size()) {
-                    textRenderer->renderTextAt(apps[i].title, {0, 255, 245, 255}, x - 8, base_y - 35, TextAlign::Left);
+                    textRenderer->renderTextAt(apps[i].title, {0, 255, 245, 255}, title_x, base_y - 35, TextAlign::Center);
                 }
 
                 for (int t = 0; t < outline_thickness; ++t) {
