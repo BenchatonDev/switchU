@@ -26,7 +26,7 @@ Install wut:
 (sudo) (dkp-)pacman -Syu --needed wiiu-dev
 ```
 
-Install SDL2 Wii U:
+Install The SDL2 Wii U Libraries:
 ```
 (sudo) (dkp-)pacman -S wiiu-sdl2 wiiu-sdl2_image wiiu-sdl2_ttf
 ```
@@ -38,8 +38,8 @@ make (path to Makefile)
 ```
 
 # Credits
-- DanielKO For emotional support and helping me figure out the rpx loader
 - [BenchatonDev](https://github.com/BenchatonDev) Co-writer on the projects code.
 - [Ashquarky](https://github.com/ashquarky) For porting SDL2 to Wii U
 - [Dimok](https://github.com/dimok789) For making VPADInput.h and WPADInput.h
 - [GaryOderNichts](https://github.com/GaryOderNichts) For making Wii U ident which I used as 'base'
+- DanielKO For emotional support and helping me figure out the rpx loader
