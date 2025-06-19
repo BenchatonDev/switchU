@@ -546,7 +546,8 @@ void update() {
             SDL_RenderCopy(main_renderer, textures.downloads, NULL, &downloads_rect);
             SDL_RenderCopy(main_renderer, textures.settings, NULL, &settings_rect);
             SDL_RenderCopy(main_renderer, textures.power, NULL, &power_rect);
-            SDL_RenderCopy(main_renderer, textures.reference, NULL, &reference_rect);
+            //SDL_RenderCopy(main_renderer, textures.reference, NULL, &reference_rect);
+            // Uncomment this to view a reference for positions and stuff of that sort ^
         }
     }
 
@@ -631,7 +632,7 @@ int main(int argc, char const *argv[]) {
             }
         }
         baseInput.process();
-        battery_level = vpadInput.data.battery / 255 * 100;
+        battery_level = (int)((float)vpadInput.data.battery / 255.0f * 100);
 
         input(baseInput);
 
