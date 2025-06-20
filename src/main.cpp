@@ -681,7 +681,7 @@ int main(int argc, char const *argv[]) {
             }
         }
         baseInput.process();
-        battery_level = (int)((float)vpadInput.data.battery / 255.0f * 100);
+        battery_level = (int)((float)vpadInput.data.battery/* / 255.0f * 100*/);
 
         input(baseInput);
 
