@@ -33,10 +33,11 @@ enum RowSelection {
 
 enum Menu {
     MENU_MAIN = 0,
-    MENU_USER = 1,
-    MENU_MORE = 2,
-    MENU_SETTINGS = 3,
-    MENU_SCREENSHOT = 4
+    MENU_APPS = 1,
+    MENU_USER = 2,
+    MENU_MORE = 3,
+    MENU_SETTINGS = 4,
+    MENU_SCREENSHOT = 5
 };
 
 namespace Config {
@@ -46,7 +47,7 @@ namespace Config {
     constexpr int SCROLL_INITIAL_DELAY = 500;
     constexpr int SCROLL_REPEAT_INTERVAL = 75;
 
-    constexpr int TILE_COUNT_MIDDLE = 12;
+    constexpr int TILE_COUNT_MIDDLE = 13;
     constexpr int TILE_COUNT_BOTTOM = 8;
 
     constexpr int circle_diameter = 75;
@@ -58,11 +59,14 @@ struct UITextures {
     // Hud Elements
     SDL_Texture* circle = nullptr;
     SDL_Texture* circle_selection = nullptr;
+    SDL_Texture* circle_big = nullptr;
+    SDL_Texture* circle_big_selection = nullptr;
     SDL_Texture* battery_full = nullptr;
     SDL_Texture* battery_three_fourths = nullptr;
     SDL_Texture* battery_half = nullptr;
     SDL_Texture* battery_needs_charge = nullptr;
     SDL_Texture* battery_base = nullptr;
+    SDL_Texture* all_titles = nullptr;
 
     // Bottom Row
     SDL_Texture* miiverse = nullptr;
@@ -202,11 +206,14 @@ int initialize() {
 
     textures.circle = load_texture(SD_CARD_PATH "switchU/assets/ui_button.png", main_renderer);
     textures.circle_selection = load_texture(SD_CARD_PATH "switchU/assets/ui_button_selected.png", main_renderer);
+    textures.circle_big = load_texture(SD_CARD_PATH "switchU/assets/ui_big_circle.png", main_renderer);
+    textures.circle_big_selection = load_texture(SD_CARD_PATH "switchU/assets/ui_big_circle_selected.png", main_renderer);
     textures.battery_full = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_full.png", main_renderer);
     textures.battery_three_fourths = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_three_fourths.png", main_renderer);
     textures.battery_half = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_half.png", main_renderer);
     textures.battery_needs_charge = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_needs_charge.png", main_renderer);
     textures.battery_base = load_texture(SD_CARD_PATH "switchU/assets/battery/battery_base.png", main_renderer);
+    textures.all_titles = load_texture(SD_CARD_PATH "switchU/assets/all_titles.png", main_renderer);
 
     textures.miiverse = load_texture(SD_CARD_PATH "switchU/assets/miiverse.png", main_renderer);
     textures.eshop = load_texture(SD_CARD_PATH "switchU/assets/eshop.png", main_renderer);
@@ -309,7 +316,7 @@ void input(Input &input) {
     if (pressed_up) {
         if (cur_menu == MENU_MAIN) {
             if (cur_selected_row > 0) cur_selected_row--;
-            cur_selected_tile = 0;
+            if (is_middle_row) cur_selected_tile = 0;
         } else if (cur_menu == MENU_USER) {
             if (cur_selected_subrow > 0) cur_selected_subrow--;
         }
@@ -329,7 +336,7 @@ void input(Input &input) {
     if (pressed_down) {
         if (cur_menu == MENU_MAIN) {
             if (cur_selected_row < 2) cur_selected_row++;
-            cur_selected_tile = 0;
+            if (cur_selected_tile >= 7) cur_selected_tile = 7;
         } else if (cur_menu == MENU_USER) {
             if (cur_selected_subrow < Config::settings_row_count - 1) cur_selected_subrow++;
         }
@@ -365,6 +372,8 @@ void input(Input &input) {
                         printf("Launching system app with title ID: %llu\n", apps[cur_selected_tile].titleid);
                         launch_system_title(apps[cur_selected_tile].titleid);
                     }
+                } else {
+                    cur_menu = MENU_APPS;
                 }
             } else if (cur_menu == MENU_USER) {
                 if (cur_selected_subrow == 0) {
@@ -461,11 +470,22 @@ void update() {
 
             SDL_Rect icon_rect = { x, base_y, Config::spawn_box_size, Config::spawn_box_size };
 
-            if (i < (int)apps.size() && apps[i].icon) {
-                render_icon_with_background(main_renderer, apps[i].icon, x, base_y, Config::spawn_box_size);
+            if (i < (Config::TILE_COUNT_MIDDLE - 1)) {
+                if (i < (int)apps.size() && apps[i].icon) {
+                    render_icon_with_background(main_renderer, apps[i].icon, x, base_y, Config::spawn_box_size);
+                } else {
+                    render_set_color(main_renderer, COLOR_UI_BOX);
+                    SDL_RenderDrawRect(main_renderer, &icon_rect);
+                }
+                if (i < (int)apps.size() && (i == cur_selected_tile && cur_selected_row == ROW_MIDDLE)) {
+                    textRenderer->renderTextAt(apps[i].title, {0, 255, 245, 255}, title_x, base_y - 35, TextAlign::Center);
+                }
             } else {
-                render_set_color(main_renderer, COLOR_UI_BOX);
-                SDL_RenderDrawRect(main_renderer, &icon_rect);
+                SDL_RenderCopy(main_renderer, textures.circle_big, NULL, &icon_rect);
+                SDL_RenderCopy(main_renderer, textures.all_titles, NULL, &icon_rect);
+                if (i == cur_selected_tile && cur_selected_row == ROW_MIDDLE) {
+                    textRenderer->renderTextAt("All Software", {0, 255, 245, 255}, title_x, base_y, TextAlign::Center);
+                }
             }
 
             if (i == cur_selected_tile && cur_selected_row == ROW_MIDDLE) {
@@ -481,18 +501,18 @@ void update() {
 
                 render_set_color(main_renderer, COLOR_CYAN);
 
-                if (i < (int)apps.size()) {
-                    textRenderer->renderTextAt(apps[i].title, {0, 255, 245, 255}, title_x, base_y - 35, TextAlign::Center);
-                }
-
-                for (int t = 0; t < outline_thickness; ++t) {
-                    SDL_Rect thick_rect = {
-                        outline_rect.x - t,
-                        outline_rect.y - t,
-                        outline_rect.w + 2 * t,
-                        outline_rect.h + 2 * t
-                    };
-                    SDL_RenderDrawRect(main_renderer, &thick_rect);
+                if (i < (Config::TILE_COUNT_MIDDLE - 1)) {
+                    for (int t = 0; t < outline_thickness; ++t) {
+                        SDL_Rect thick_rect = {
+                            outline_rect.x - t,
+                            outline_rect.y - t,
+                            outline_rect.w + 2 * t,
+                            outline_rect.h + 2 * t
+                        };
+                        SDL_RenderDrawRect(main_renderer, &thick_rect);
+                    }
+                } else {
+                    SDL_RenderCopy(main_renderer, textures.circle_big_selection, NULL, &icon_rect);
                 }
             }
         }
