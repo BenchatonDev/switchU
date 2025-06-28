@@ -105,7 +105,7 @@ static bool up_scrolling = false;
 static bool down_scrolling = false;
 bool menuOpen = false;
 bool load_homebrew_titles = false;
-int battery_level = 0.0;
+int battery_level = 0;
 
 int seperation_space = 264;
 int target_camera_offset_x = 0;
@@ -203,6 +203,8 @@ int initialize() {
     if (!textRenderer->loadFont(SD_CARD_PATH "switchU/fonts/font.ttf", 24, true)) {
         printf("Failed to load font!");
     }
+
+    SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1" );
 
     textures.circle = load_texture(SD_CARD_PATH "switchU/assets/ui_button.png", main_renderer);
     textures.circle_selection = load_texture(SD_CARD_PATH "switchU/assets/ui_button_selected.png", main_renderer);
@@ -612,20 +614,49 @@ void update() {
         std::string title = std::string(ACCOUNT_ID) + "'s Page";
         textRenderer->renderTextAt(title.c_str(), {255, 255, 255, 255}, 128, 32, TextAlign::Left);
     } else {
-        std::string battery = std::to_string(battery_level) + "%";
+        std::string battery;
         SDL_Rect battery_rect = { Config::WINDOW_WIDTH - 102, 51, 46, 28 };
-        textRenderer->renderTextAt(battery, {255, 255, 255, 255}, Config::WINDOW_WIDTH - 100, 53, TextAlign::Right);
-        SDL_RenderCopy(main_renderer, textures.battery_base, NULL, &battery_rect);
 
-        if ((battery_level >= 0) && (battery_level <= 25)) {
-            SDL_RenderCopy(main_renderer, textures.battery_needs_charge, NULL, &battery_rect);
-        } else if ((battery_level >= 25) && (battery_level <= 50)) {
-            SDL_RenderCopy(main_renderer, textures.battery_half, NULL, &battery_rect);
-        } else if ((battery_level >= 50) && (battery_level <= 75)) {
-            SDL_RenderCopy(main_renderer, textures.battery_three_fourths, NULL, &battery_rect);
-        } else if (battery_level >= 75) {
-            SDL_RenderCopy(main_renderer, textures.battery_full, NULL, &battery_rect);
+        switch (battery_level) {
+            case 0:
+                SDL_SetTextureColorMod(textures.battery_full, 0, 255, 0);
+                SDL_RenderCopy(main_renderer, textures.battery_full, NULL, &battery_rect);
+                battery = "";
+                break;
+            case 1:
+                SDL_RenderCopy(main_renderer, textures.battery_needs_charge, NULL, &battery_rect);
+                battery = "0%";
+                break;
+            case 2:
+                SDL_RenderCopy(main_renderer, textures.battery_needs_charge, NULL, &battery_rect);
+                battery = "20%";
+                break;
+            case 3:
+                SDL_RenderCopy(main_renderer, textures.battery_half, NULL, &battery_rect);
+                battery = "30%";
+                break;
+            case 4:
+                SDL_RenderCopy(main_renderer, textures.battery_half, NULL, &battery_rect);
+                battery = "50%";
+                break;
+            case 5:
+                SDL_RenderCopy(main_renderer, textures.battery_three_fourths, NULL, &battery_rect);
+                battery = "80%";
+                break;
+            case 6:
+                SDL_SetTextureColorMod(textures.battery_full, 255, 255, 255);
+                SDL_RenderCopy(main_renderer, textures.battery_full, NULL, &battery_rect);
+                battery = "100%";
+                break;
+            default:
+                SDL_SetTextureColorMod(textures.battery_full, 247, 146, 30);
+                SDL_RenderCopy(main_renderer, textures.battery_full, NULL, &battery_rect);
+                battery = "???%";
+                break;
         }
+
+        textRenderer->renderTextAt(battery, {255, 255, 255, 255}, Config::WINDOW_WIDTH - 110, 53, TextAlign::Right);
+        SDL_RenderCopy(main_renderer, textures.battery_base, NULL, &battery_rect);
     }
 
     // === Misc ===
@@ -701,7 +732,7 @@ int main(int argc, char const *argv[]) {
             }
         }
         baseInput.process();
-        battery_level = (int)((float)vpadInput.data.battery/* / 255.0f * 100*/);
+        battery_level = vpadInput.data.battery;
 
         input(baseInput);
 
